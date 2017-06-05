@@ -16,10 +16,13 @@ class Steiner {
 		void parse(const string& fileName);
 	private: // helper functions
 		Point string2Point(string str);
+		void buildSpanningGraph();
+		void findNeighbor(Point& p);
 	private: // members
 		string _name;
 		int _boundaryLeft, _boundaryRight;
 		int _boundaryTop, _boundaryBottom;
+		vector<int> _pointOrder; // in x
 		vector<Point> _points;
 };
 
