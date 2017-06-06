@@ -30,6 +30,8 @@ class Steiner {
 		vector<int> _pointOrder; // in x
 		vector<Point> _points;
 		vector<Edge> _edges;
+		vector<Edge> _MST;
+		vector<vector<int>> _groups;
 };
 
 #endif

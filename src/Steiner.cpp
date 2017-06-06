@@ -44,11 +44,16 @@ void Steiner::parse(const string& fileName) {
 	
 	ifs >> buf >> buf >> buf;
 	_points.resize(stoi(buf));
+	_groups.resize(_points.size());
 	_pointOrder.resize(_points.size());
 	for (unsigned i = 0; i < _points.size(); ++i) {
 		ifs >> buf >> buf >> buf;
 		_points[i] = string2Point(buf);
 		_pointOrder[i] = i;
+	}
+	for (unsigned i = 0; i < _points.size(); ++i) {
+		_points[i].grp = i;
+	  _groups[i].push_back(i);
 	}
 	sort(_pointOrder.begin(), _pointOrder.end(),
 			[&] (int i1, int i2) {
@@ -58,11 +63,14 @@ void Steiner::parse(const string& fileName) {
 }
 void Steiner::solve() {
 	buildSpanningGraph();
+	buildMST();
+	size_t cost = 0;
+	for (auto& e : _MST) cost += e.weight;
 	plot();
+	cerr << cost << endl;
 	cerr << _edges.size() << endl;
 }
 void Steiner::buildSpanningGraph() {
-	vector<int> order1 = _pointOrder;
 	map<int, int> A1, A2;
 	for (auto& pId : _pointOrder) {
 		Point& p = _points[pId];
@@ -143,7 +151,24 @@ void Steiner::buildMST() {
 				return e1.weight < e2.weight;
 			});
 	for (unsigned i = 0; i < _edges.size(); ++i) {
-		
+		Edge& e = _edges[i];
+		Point& p1 = _points[e.p1];
+		Point& p2 = _points[e.p2];
+		if (p1.grp != p2.grp) {
+			_MST.emplace_back(e);
+			if (_groups[p1.grp].size() < _groups[p2.grp].size()) {
+				for (int pId : _groups[p1.grp]) {
+					_points[pId].grp = p2.grp;
+					_groups[p2.grp].emplace_back(pId);
+				}
+			}
+			else {
+				for (int pId : _groups[p2.grp]) {
+					_points[pId].grp = p1.grp;
+					_groups[p1.grp].emplace_back(pId);
+				}
+			}
+		}
 	}
 }
 void Steiner::plot() {
@@ -158,16 +183,25 @@ void Steiner::plot() {
 	of << "set object " << idx++ << " rect from "
 		 << _boundaryLeft << "," << _boundaryBottom << " to "
 		 << _boundaryRight << "," << _boundaryTop << "fc rgb \"grey\" behind\n";
+	// point
 	for (unsigned i = 0; i < _points.size(); ++i) {
 		of << "set object circle at first " << _points[i].x << ","
 			 << _points[i].y << " radius char 0.25 fillstyle empty "
 			 << "border lc rgb '#aa1100' front\n";
 	}
+	// RSG
 	for (unsigned i = 0; i < _edges.size(); ++i) {
 		of << "set arrow " << idx++ << " from "
 			 << _points[_edges[i].p1].x << "," << _points[_edges[i].p1].y << " to "
 			 << _points[_edges[i].p2].x << "," << _points[_edges[i].p2].y 
 			 << " nohead lc rgb \"white\" lw 1 front\n";
+	}
+	// MST
+	for (unsigned i = 0; i < _MST.size(); ++i) {
+		of << "set arrow " << idx++ << " from "
+			 << _points[_MST[i].p1].x << "," << _points[_MST[i].p1].y << " to "
+			 << _points[_MST[i].p2].x << "," << _points[_MST[i].p2].y 
+			 << " nohead lc rgb \"blue\" lw 1 front\n";
 	}
 	of << "plot 1000000000" << endl;
 	of << "pause -1 'Press any key'" << endl;
