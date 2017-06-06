@@ -29,8 +29,16 @@ Point Steiner::string2Point(string str) {
 	int y = stoi(tokens[1]);
 	return Point(x, y);
 }
+inline string getFileName(const string& filePathName, bool getFile) {
+  string retStr = filePathName;
+  string::size_type pos = retStr.rfind("/");
+  if (pos != string::npos)
+    if (getFile) retStr = retStr.substr(pos + 1);
+		else retStr = retStr.substr(0, pos);
+  return retStr;
+}
 void Steiner::parse(const string& fileName) {
-	_name = fileName.substr(10);
+	_name = getFileName(fileName, true);
 	fstream ifs(fileName, ifstream::in);
 	string buf;
 	Point p;
@@ -63,18 +71,14 @@ void Steiner::addEdge(int p1, int p2) {
 	_edges.emplace_back(e);
 }
 void Steiner::solve() {
-	buildRSG();
 	// for (unsigned i = 0; i < _points.size(); ++i)
 	// for (unsigned j = i; j < _points.size(); ++j) {
 	// 	addEdge(i, j);
 	// } 
+	buildRSG();
 	buildMST();
 	buildRST();
 	plot();
-	size_t cost = 0;
-	for (auto& e : _MST) cost += e.weight;
-	cerr << "Edge num:   " << _edges.size() << endl;
-	cerr << "MST length: " << cost << endl;
 }
 void Steiner::buildRSG() {
 	vector<int> order1 ,order2;
@@ -154,6 +158,7 @@ void Steiner::buildRSG() {
 		A1.emplace(p.x + p.y, pId);
 		A2.emplace(p.x + p.y, pId);
 	}
+	cerr << "RSG edge  : " << _edges.size() << endl;
 }
 void Steiner::buildMST() {
 	sort(_edges.begin(), _edges.end(),
@@ -184,9 +189,12 @@ void Steiner::buildMST() {
 			[&] (Edge& e1, Edge& e2) {
 				return e1.weight < e2.weight;
 			});
+	size_t cost = 0;
+	for (auto& e : _MST) cost += e.weight;
+	cerr << "MST length: " << cost << endl;
 }
 void Steiner::buildRST() {
-
+	
 }
 void Steiner::plot() {
 	string ofileName = _name + ".plt";
@@ -204,8 +212,8 @@ void Steiner::plot() {
 	// point
 	for (unsigned i = 0; i < _points.size(); ++i) {
 		of << "set object circle at first " << _points[i].x << ","
-			 << _points[i].y << " radius char 0.5 fillstyle empty "
-			 << "border lc rgb '#aa1100' front\n";
+			 << _points[i].y << " radius char 0.3 fillstyle solid "
+			 << "fc rgb \"red\" front\n";
 	}
 	// RSG
 	for (unsigned i = 0; i < _edges.size(); ++i) {
