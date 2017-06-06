@@ -55,31 +55,40 @@ void Steiner::parse(const string& fileName) {
 		_points[i].grp = i;
 	  _groups[i].push_back(i);
 	}
-	sort(_pointOrder.begin(), _pointOrder.end(),
-			[&] (int i1, int i2) {
-				return _points[i1].x < _points[i2].x;
-			});
+	// sort(_pointOrder.begin(), _pointOrder.end(),
+	// 		[&] (int i1, int i2) {
+	// 			return _points[i1].x < _points[i2].x;
+	// 		});
 	
 }
 void Steiner::solve() {
-	buildSpanningGraph();
+	buildRSG();
 	buildMST();
+	plot();
 	size_t cost = 0;
 	for (auto& e : _MST) cost += e.weight;
-	plot();
-	cerr << cost << endl;
-	cerr << _edges.size() << endl;
+	cerr << "Edge num:   " << _edges.size() << endl;
+	cerr << "MST length: " << cost << endl;
 }
-void Steiner::buildSpanningGraph() {
+void Steiner::buildRSG() {
 	map<int, int> A1, A2;
-	for (auto& pId : _pointOrder) {
+	vector<int> order1 = _pointOrder, order2 = order1;
+	sort(order1.begin(), order1.end(),
+			[&] (int i1, int i2) {
+				return _points[i1].x + _points[i1].y < _points[i2].x + _points[i2].y;
+			});
+	sort(order2.begin(), order2.end(),
+			[&] (int i1, int i2) {
+				return _points[i1].x - _points[i1].y < _points[i2].x - _points[i2].y;
+			});
+	for (auto& pId : order1) {
 		Point& p = _points[pId];
 		if (!A1.empty()) {
 			auto it = --A1.end();
 			do {
 				Point& tmp = _points[(*it).second];
 				if (p.y - tmp.y >= p.x - tmp.x && 
-						p.y - tmp.y >= 0 &&
+						p.y - tmp.y > 0 &&
 						p.x - tmp.x >= 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
@@ -93,7 +102,7 @@ void Steiner::buildSpanningGraph() {
 				Point& tmp = _points[(*it).second];
 				if (p.y - tmp.y < p.x - tmp.x && 
 						p.y - tmp.y >= 0 &&
-						p.x - tmp.x >= 0) {
+						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
 					break;
@@ -105,7 +114,7 @@ void Steiner::buildSpanningGraph() {
 	}
 	A1.clear();
 	A2.clear();
-	for (auto& pId : _pointOrder) {
+	for (auto& pId : order2) {
 		Point& p = _points[pId];
 		if (!A1.empty()) {
 			auto it = --A1.end();

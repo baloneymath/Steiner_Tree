@@ -19,7 +19,7 @@ class Steiner {
 		void solve();
 	private: // helper functions
 		Point string2Point(string str);
-		void buildSpanningGraph();
+		void buildRSG();
 		void buildMST();
 		void addEdge(int p1, int p2);
 		
