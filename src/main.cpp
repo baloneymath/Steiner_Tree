@@ -8,5 +8,6 @@ int main(int argc, char** argv) {
 	string fileName = argv[1];
 	Steiner steiner;
 	steiner.parse(argv[1]);
+	steiner.solve();
 	return 0;
 }

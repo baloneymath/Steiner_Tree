@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include "datastructure.h"
 using namespace std;
 
@@ -14,16 +15,21 @@ class Steiner {
 		~Steiner() {}
 
 		void parse(const string& fileName);
+		void plot();
+		void solve();
 	private: // helper functions
 		Point string2Point(string str);
 		void buildSpanningGraph();
-		void findNeighbor(Point& p);
+		void buildMST();
+		void addEdge(int p1, int p2);
+		
 	private: // members
 		string _name;
 		int _boundaryLeft, _boundaryRight;
 		int _boundaryTop, _boundaryBottom;
 		vector<int> _pointOrder; // in x
 		vector<Point> _points;
+		vector<Edge> _edges;
 };
 
 #endif
