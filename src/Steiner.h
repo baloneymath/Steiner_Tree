@@ -21,13 +21,13 @@ class Steiner {
 		Point string2Point(string str);
 		void buildRSG();
 		void buildMST();
+		void buildRST();
 		void addEdge(int p1, int p2);
 		
 	private: // members
 		string _name;
 		int _boundaryLeft, _boundaryRight;
 		int _boundaryTop, _boundaryBottom;
-		vector<int> _pointOrder; // in x
 		vector<Point> _points;
 		vector<Edge> _edges;
 		vector<Edge> _MST;

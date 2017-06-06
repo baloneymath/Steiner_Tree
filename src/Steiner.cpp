@@ -4,6 +4,7 @@
 #include <utility>
 #include <algorithm>
 #include <map>
+#include <numeric>
 
 #include "Steiner.h"
 using namespace std;
@@ -45,21 +46,21 @@ void Steiner::parse(const string& fileName) {
 	ifs >> buf >> buf >> buf;
 	_points.resize(stoi(buf));
 	_groups.resize(_points.size());
-	_pointOrder.resize(_points.size());
 	for (unsigned i = 0; i < _points.size(); ++i) {
 		ifs >> buf >> buf >> buf;
 		_points[i] = string2Point(buf);
-		_pointOrder[i] = i;
 	}
 	for (unsigned i = 0; i < _points.size(); ++i) {
 		_points[i].grp = i;
 	  _groups[i].push_back(i);
 	}
-	// sort(_pointOrder.begin(), _pointOrder.end(),
-	// 		[&] (int i1, int i2) {
-	// 			return _points[i1].x < _points[i2].x;
-	// 		});
-	
+}
+void Steiner::addEdge(int p1, int p2) {
+	if (p1 == p2) return;
+	int weight = abs(_points[p1].x - _points[p2].x) +
+					 abs(_points[p1].y - _points[p2].y);
+	Edge e(p1, p2, weight);
+	_edges.emplace_back(e);
 }
 void Steiner::solve() {
 	buildRSG();
@@ -68,6 +69,7 @@ void Steiner::solve() {
 	// 	addEdge(i, j);
 	// } 
 	buildMST();
+	buildRST();
 	plot();
 	size_t cost = 0;
 	for (auto& e : _MST) cost += e.weight;
@@ -75,7 +77,10 @@ void Steiner::solve() {
 	cerr << "MST length: " << cost << endl;
 }
 void Steiner::buildRSG() {
-	vector<int> order1 = _pointOrder, order2 = order1;
+	vector<int> order1 ,order2;
+	order1.resize(_points.size());
+	iota(order1.begin(), order1.end(), 0);
+	order2 = order1;
 	sort(order1.begin(), order1.end(),
 			[&] (int i1, int i2) {
 				return _points[i1].x + _points[i1].y < _points[i2].x + _points[i2].y;
@@ -88,8 +93,9 @@ void Steiner::buildRSG() {
 	for (auto& pId : order1) {
 		Point& p = _points[pId];
 		if (!A1.empty()) {
-			auto it = --A1.end();
+			auto it = A1.end();
 			do {
+				--it;
 				Point& tmp = _points[(*it).second];
 				if (p.y - tmp.y >= p.x - tmp.x && 
 						p.y - tmp.y > 0 &&
@@ -97,12 +103,12 @@ void Steiner::buildRSG() {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
 				}
-				cerr << (it == A1.begin()) << endl;
-			} while (it-- != A1.begin());
+			} while (it != A1.begin());
 		}
 		if (!A2.empty()) {
-			auto it = --A2.end();
+			auto it = A2.end();
 			do {
+				--it;
 				Point& tmp = _points[(*it).second];
 				if (p.y - tmp.y < p.x - tmp.x && 
 						p.y - tmp.y >= 0 &&
@@ -110,7 +116,7 @@ void Steiner::buildRSG() {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
 				}
-			} while (it-- != A2.begin());
+			} while (it != A2.begin());
 		}
 		A1.emplace(p.x + p.y, pId);
 		A2.emplace(p.x + p.y, pId);
@@ -120,8 +126,9 @@ void Steiner::buildRSG() {
 	for (auto& pId : order2) {
 		Point& p = _points[pId];
 		if (!A1.empty()) {
-			auto it = --A1.end();
+			auto it = A1.end();
 			do {
+				--it;
 				Point& tmp = _points[(*it).second];
 				if (tmp.y - p.y <= p.x - tmp.x && 
 						p.y - tmp.y < 0 &&
@@ -129,11 +136,12 @@ void Steiner::buildRSG() {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
 				}
-			} while (it-- != A1.begin());
+			} while (it != A1.begin());
 		}
 		if (!A2.empty()) {
-			auto it = --A2.end();
+			auto it = A2.end();
 		  do {
+				--it;
 				Point& tmp = _points[(*it).second];
 				if (tmp.y - p.y > p.x - tmp.x && 
 						p.y - tmp.y < 0 &&
@@ -141,18 +149,11 @@ void Steiner::buildRSG() {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
 				}
-			} while (it-- != A2.begin());
+			} while (it != A2.begin());
 		}
 		A1.emplace(p.x + p.y, pId);
 		A2.emplace(p.x + p.y, pId);
 	}
-}
-void Steiner::addEdge(int p1, int p2) {
-	if (p1 == p2) return;
-	int weight = abs(_points[p1].x - _points[p2].x) +
-					 abs(_points[p1].y - _points[p2].y);
-	Edge e(p1, p2, weight);
-	_edges.emplace_back(e);
 }
 void Steiner::buildMST() {
 	sort(_edges.begin(), _edges.end(),
@@ -179,6 +180,13 @@ void Steiner::buildMST() {
 			}
 		}
 	}
+	sort(_MST.begin(), _MST.end(),
+			[&] (Edge& e1, Edge& e2) {
+				return e1.weight < e2.weight;
+			});
+}
+void Steiner::buildRST() {
+
 }
 void Steiner::plot() {
 	string ofileName = _name + ".plt";
