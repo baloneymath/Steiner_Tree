@@ -63,6 +63,10 @@ void Steiner::parse(const string& fileName) {
 }
 void Steiner::solve() {
 	buildRSG();
+	// for (unsigned i = 0; i < _points.size(); ++i)
+	// for (unsigned j = i; j < _points.size(); ++j) {
+	// 	addEdge(i, j);
+	// } 
 	buildMST();
 	plot();
 	size_t cost = 0;
@@ -71,7 +75,6 @@ void Steiner::solve() {
 	cerr << "MST length: " << cost << endl;
 }
 void Steiner::buildRSG() {
-	map<int, int> A1, A2;
 	vector<int> order1 = _pointOrder, order2 = order1;
 	sort(order1.begin(), order1.end(),
 			[&] (int i1, int i2) {
@@ -81,6 +84,7 @@ void Steiner::buildRSG() {
 			[&] (int i1, int i2) {
 				return _points[i1].x - _points[i1].y < _points[i2].x - _points[i2].y;
 			});
+	multimap<int, int> A1, A2;
 	for (auto& pId : order1) {
 		Point& p = _points[pId];
 		if (!A1.empty()) {
@@ -89,11 +93,11 @@ void Steiner::buildRSG() {
 				Point& tmp = _points[(*it).second];
 				if (p.y - tmp.y >= p.x - tmp.x && 
 						p.y - tmp.y > 0 &&
-						p.x - tmp.x >= 0) {
+						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
-					break;
 				}
+				cerr << (it == A1.begin()) << endl;
 			} while (it-- != A1.begin());
 		}
 		if (!A2.empty()) {
@@ -105,12 +109,11 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
-					break;
 				}
 			} while (it-- != A2.begin());
 		}
-		A1[p.x + p.y] = pId;
-		A2[p.x + p.y] = pId;
+		A1.emplace(p.x + p.y, pId);
+		A2.emplace(p.x + p.y, pId);
 	}
 	A1.clear();
 	A2.clear();
@@ -121,30 +124,27 @@ void Steiner::buildRSG() {
 			do {
 				Point& tmp = _points[(*it).second];
 				if (tmp.y - p.y <= p.x - tmp.x && 
-						tmp.y - p.y > 0 &&
-						p.x - tmp.x >= 0) {
+						p.y - tmp.y < 0 &&
+						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
-					break;
 				}
 			} while (it-- != A1.begin());
 		}
 		if (!A2.empty()) {
 			auto it = --A2.end();
-			do {
+		  do {
 				Point& tmp = _points[(*it).second];
 				if (tmp.y - p.y > p.x - tmp.x && 
-						tmp.y - p.y > 0 &&
+						p.y - tmp.y < 0 &&
 						p.x - tmp.x >= 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
-					break;
 				}
-
 			} while (it-- != A2.begin());
 		}
-		A1[p.x - p.y] = pId;
-		A2[p.x - p.y] = pId;
+		A1.emplace(p.x + p.y, pId);
+		A2.emplace(p.x + p.y, pId);
 	}
 }
 void Steiner::addEdge(int p1, int p2) {
@@ -183,6 +183,7 @@ void Steiner::buildMST() {
 void Steiner::plot() {
 	string ofileName = _name + ".plt";
 	fstream of(ofileName, ofstream::out);
+	of << "set size ratio -1" << endl;
 	of << "set nokey" << endl;
 	of << "set xrange[" << -_boundaryRight * 0.1 << ":" 
 		 << _boundaryRight * 1.1 << "]" << endl;
@@ -195,7 +196,7 @@ void Steiner::plot() {
 	// point
 	for (unsigned i = 0; i < _points.size(); ++i) {
 		of << "set object circle at first " << _points[i].x << ","
-			 << _points[i].y << " radius char 0.25 fillstyle empty "
+			 << _points[i].y << " radius char 0.5 fillstyle empty "
 			 << "border lc rgb '#aa1100' front\n";
 	}
 	// RSG
