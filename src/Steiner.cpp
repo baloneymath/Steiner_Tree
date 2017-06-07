@@ -108,6 +108,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
+					break;
 				}
 			} while (it != A1.begin());
 		}
@@ -121,6 +122,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
+					break;
 				}
 			} while (it != A2.begin());
 		}
@@ -141,6 +143,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
+					break;
 				}
 			} while (it != A1.begin());
 		}
@@ -154,11 +157,12 @@ void Steiner::buildRSG() {
 						p.x - tmp.x >= 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
+					break;
 				}
 			} while (it != A2.begin());
 		}
-		A1.emplace(p.x + p.y, pId);
-		A2.emplace(p.x + p.y, pId);
+		A1.emplace(p.x - p.y, pId);
+		A2.emplace(p.x - p.y, pId);
 	}
 	cerr << "RSG edge  : " << _edges.size() << endl;
 }
@@ -179,41 +183,41 @@ void Steiner::buildMST() {
 			[&] (Edge& e1, Edge& e2) {
 				return e1.weight < e2.weight;
 			});
-	// for (unsigned i = 0; i < _points.size(); ++i)
-	// 	_points[i].parent = i + _edges.size();
-	// for (unsigned i = 0; i < _edges.size(); ++i) {
-	// 	Edge& e = _edges[i];
-	// 	int head1 = findSet(e.p1);
-	// 	int head2 = findSet(e.p2);
-	// 	if (head1 != head2) {
-	// 		_MST.emplace_back(e);
-	// 		if (head1 >= _edges.size()) _points[e.p1].parent = i;
-	// 		else _edges[head1].parent = i;
-	// 		if (head2 >= _edges.size()) _points[e.p2].parent = i;
-	// 		else _edges[head2].parent = i;
-	// 	}
-	// }
-	 
+	for (unsigned i = 0; i < _points.size(); ++i)
+		_points[i].parent = i + _edges.size();
 	for (unsigned i = 0; i < _edges.size(); ++i) {
 		Edge& e = _edges[i];
-		Point& p1 = _points[e.p1];
-		Point& p2 = _points[e.p2];
-		if (p1.grp != p2.grp) {
+		int head1 = findSet(e.p1);
+		int head2 = findSet(e.p2);
+		if (head1 != head2) {
 			_MST.emplace_back(e);
-			if (_groups[p1.grp].size() < _groups[p2.grp].size()) {
-				for (int pId : _groups[p1.grp]) {
-					_points[pId].grp = p2.grp;
-					_groups[p2.grp].emplace_back(pId);
-				}
-			}
-			else {
-				for (int pId : _groups[p2.grp]) {
-					_points[pId].grp = p1.grp;
-					_groups[p1.grp].emplace_back(pId);
-				}
-			}
+			if (head1 >= _edges.size()) _points[e.p1].parent = i;
+			else _edges[head1].parent = i;
+			if (head2 >= _edges.size()) _points[e.p2].parent = i;
+			else _edges[head2].parent = i;
 		}
 	}
+	 
+	// for (unsigned i = 0; i < _edges.size(); ++i) {
+	// 	Edge& e = _edges[i];
+	// 	Point& p1 = _points[e.p1];
+	// 	Point& p2 = _points[e.p2];
+	// 	if (p1.grp != p2.grp) {
+	// 		_MST.emplace_back(e);
+	// 		if (_groups[p1.grp].size() < _groups[p2.grp].size()) {
+	// 			for (int pId : _groups[p1.grp]) {
+	// 				_points[pId].grp = p2.grp;
+	// 				_groups[p2.grp].emplace_back(pId);
+	// 			}
+	// 		}
+	// 		else {
+	// 			for (int pId : _groups[p2.grp]) {
+	// 				_points[pId].grp = p1.grp;
+	// 				_groups[p1.grp].emplace_back(pId);
+	// 			}
+	// 		}
+	// 	}
+	// }
 	sort(_MST.begin(), _MST.end(),
 			[&] (Edge& e1, Edge& e2) {
 				return e1.weight < e2.weight;
