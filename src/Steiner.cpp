@@ -63,13 +63,6 @@ void Steiner::parse(const string& fileName) {
 	  _groups[i].push_back(i);
 	}
 }
-void Steiner::addEdge(int p1, int p2) {
-	if (p1 == p2) return;
-	int weight = abs(_points[p1].x - _points[p2].x) +
-					 abs(_points[p1].y - _points[p2].y);
-	Edge e(p1, p2, weight);
-	_edges.emplace_back(e);
-}
 void Steiner::solve() {
 	// for (unsigned i = 0; i < _points.size(); ++i)
 	// for (unsigned j = i; j < _points.size(); ++j) {
@@ -79,6 +72,15 @@ void Steiner::solve() {
 	buildMST();
 	buildRST();
 	plot();
+}
+void Steiner::addEdge(int p1, int p2) {
+	if (p1 == p2) return;
+	int weight = abs(_points[p1].x - _points[p2].x) +
+					 abs(_points[p1].y - _points[p2].y);
+	Edge e(p1, p2, weight);
+	_edges.emplace_back(e);
+	_points[p1].neighbors.emplace_back(p2);
+	_points[p2].neighbors.emplace_back(p1);
 }
 void Steiner::buildRSG() {
 	vector<int> order1 ,order2;
@@ -160,11 +162,38 @@ void Steiner::buildRSG() {
 	}
 	cerr << "RSG edge  : " << _edges.size() << endl;
 }
+int Steiner::findSet(int pId) {
+	if (_points[pId].parent >= _edges.size()) return _points[pId].parent;
+	else {
+		Edge e = _edges[_points[pId].parent];
+		int ans = _points[pId].parent;
+		while (e.parent != -1) {
+			ans = e.parent;
+			e = _edges[e.parent];
+		}
+		return ans;
+	}
+}
 void Steiner::buildMST() {
 	sort(_edges.begin(), _edges.end(),
 			[&] (Edge& e1, Edge& e2) {
 				return e1.weight < e2.weight;
 			});
+	// for (unsigned i = 0; i < _points.size(); ++i)
+	// 	_points[i].parent = i + _edges.size();
+	// for (unsigned i = 0; i < _edges.size(); ++i) {
+	// 	Edge& e = _edges[i];
+	// 	int head1 = findSet(e.p1);
+	// 	int head2 = findSet(e.p2);
+	// 	if (head1 != head2) {
+	// 		_MST.emplace_back(e);
+	// 		if (head1 >= _edges.size()) _points[e.p1].parent = i;
+	// 		else _edges[head1].parent = i;
+	// 		if (head2 >= _edges.size()) _points[e.p2].parent = i;
+	// 		else _edges[head2].parent = i;
+	// 	}
+	// }
+	 
 	for (unsigned i = 0; i < _edges.size(); ++i) {
 		Edge& e = _edges[i];
 		Point& p1 = _points[e.p1];

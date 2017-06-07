@@ -23,7 +23,7 @@ class Steiner {
 		void buildMST();
 		void buildRST();
 		void addEdge(int p1, int p2);
-		
+		int  findSet(int pId);
 	private: // members
 		string _name;
 		int _boundaryLeft, _boundaryRight;
