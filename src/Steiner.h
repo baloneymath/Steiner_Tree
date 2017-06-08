@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <tuple>
 #include "datastructure.h"
 using namespace std;
 
@@ -24,6 +25,8 @@ class Steiner {
 		void buildRST();
 		void addEdge(int p1, int p2);
 		int  findSet(int pId);
+		int  find(int x);
+		void tarjan(int x);
 	private: // members
 		string _name;
 		int _boundaryLeft, _boundaryRight;
@@ -31,7 +34,12 @@ class Steiner {
 		vector<Point> _points;
 		vector<Edge> _edges;
 		vector<Edge> _MST;
-		vector<vector<int>> _groups;
+		vector<tuple<int, int, int>> _lca_queries; // p, p, e
+		vector<tuple<int, int, int>> _lca_answer_queries; // p, p, e
+		vector<bool> _visit;
+		vector<int>  _ancestor;
+		vector<int>  _grp;
+		int _root;
 };
 
 #endif
