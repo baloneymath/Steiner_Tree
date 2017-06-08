@@ -31,6 +31,7 @@ class Steiner {
 		string _name;
 		int _boundaryLeft, _boundaryRight;
 		int _boundaryTop, _boundaryBottom;
+		unsigned _init_p;
 		vector<Point> _points;
 		vector<Edge> _edges;
 		vector<Edge> _MST;
@@ -39,7 +40,9 @@ class Steiner {
 		vector<bool> _visit;
 		vector<int>  _ancestor;
 		vector<int>  _grp;
-		int _root;
+		int _root, _root_mst;
+		vector<tuple<int, int, int, int>> _table;
+		vector<Edge>  _newE;
 };
 
 #endif
