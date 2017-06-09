@@ -12,7 +12,8 @@ class Steiner {
 	public:
 		Steiner() :
 			_name(""), _boundaryLeft(-1), _boundaryRight(-1),
-			_boundaryTop(-1), _boundaryBottom(-1) {}
+			_boundaryTop(-1), _boundaryBottom(-1), 
+			_MST_cost(0), _MRST_cost(0) {}
 		~Steiner() {}
 
 		void parse(const string& fileName);
@@ -20,6 +21,7 @@ class Steiner {
 		void solve();
 	private: // helper functions
 		Point string2Point(string str);
+		void init();
 		void buildRSG();
 		void buildMST();
 		void buildRST();
@@ -34,8 +36,8 @@ class Steiner {
 		unsigned _init_p;
 		vector<Point> _points;
 		vector<Edge> _edges;
-		vector<Edge> _MST;
-		vector<bool> _mst_del_flags;
+		vector<unsigned> _MST;
+		vector<bool> _mst_del;
 		vector<vector<tuple<int, int>>> _lca_queries; // p, e
 		vector<vector<int>> _lca_answer_queries; // longest e
 		vector<bool> _visit;
@@ -43,7 +45,11 @@ class Steiner {
 		vector<int>  _grp;
 		int _root;
 		vector<tuple<int, int, int, int>> _table;
+		vector<unsigned> _table_illegal;
 		vector<Edge>  _newE;
+
+		long _MST_cost;
+		long _MRST_cost;
 };
 
 #endif
