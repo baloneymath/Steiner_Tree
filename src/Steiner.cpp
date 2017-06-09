@@ -455,13 +455,13 @@ void Steiner::outfile(const string& outfileName) {
 		Point& p2 = _points[_edges[_MST[i]].p2];
 		if (p1.x != p2.x) {
 			of << "H-line "
-				 << "(" << p1.x << "," << p1.y << ")"
+				 << "(" << p1.x << "," << p1.y << ") "
 				 << "(" << p2.x << "," << p1.y << ")"
 				 << endl; 
 		}
 		if (p1.y != p2.y) {
 			of << "V-line "
-				 << "(" << p2.x << "," << p1.y << ")"
+				 << "(" << p2.x << "," << p1.y << ") "
 				 << "(" << p2.x << "," << p2.y << ")"
 				 << endl; 
 		}
@@ -471,13 +471,13 @@ void Steiner::outfile(const string& outfileName) {
 		Point& p2 = _points[_newE[i].p2];
 		if (p1.x != p2.x) {
 			of << "H-line "
-				 << "(" << p1.x << "," << p1.y << ")"
+				 << "(" << p1.x << "," << p1.y << ") "
 				 << "(" << p2.x << "," << p1.y << ")"
 				 << endl; 
 		}
 		if (p1.y != p2.y) {
 			of << "V-line "
-				 << "(" << p2.x << "," << p1.y << ")"
+				 << "(" << p2.x << "," << p1.y << ") "
 				 << "(" << p2.x << "," << p2.y << ")"
 				 << endl; 
 		}
