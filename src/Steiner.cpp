@@ -180,22 +180,22 @@ void Steiner::buildMST() {
 	for (unsigned i = 0; i < _edges.size(); ++i)
 		_edges[i].parent = i;
 	size_t cost = 0;
+	_lca_queries.resize(_points.size());
 	for (unsigned i = 0; i < _edges.size(); ++i) {
 		Edge& e = _edges[i];
 		int head1 = findSet(e.p1);
 		int head2 = findSet(e.p2);
 		if (head1 != head2) {
-			_MST.emplace_back(e);
 			cost += e.weight;
 			for (auto& w : _points[e.p1].neighbors) {
 				if (w == e.p2) continue;
-				if (head1 == findSet(w)) _lca_queries.emplace_back(w, e.p1, i);
-				else _lca_queries.emplace_back(w, e.p2, i);
+				if (head1 == findSet(w)) _lca_queries[w].emplace_back(e.p1, i);
+				else 										 _lca_queries[w].emplace_back(e.p2, i);
 			}
 			for (auto& w : _points[e.p2].neighbors) {
 				if (w == e.p1) continue;
-				if (head2 == findSet(w)) _lca_queries.emplace_back(w, e.p2, i);
-				else _lca_queries.emplace_back(w, e.p1, i);
+				if (head2 == findSet(w)) _lca_queries[w].emplace_back(e.p2, i);
+				else 										 _lca_queries[w].emplace_back(e.p1, i);
 			}
 			if (head1 >= _edges.size()) _points[e.p1].parent = i;
 			else _edges[head1].parent = i;
@@ -203,14 +203,10 @@ void Steiner::buildMST() {
 			else _edges[head2].parent = i;
 			_edges[i].left = head1;
 			_edges[i].right = head2;
+			_MST.emplace_back(e);
 		}
 	}
 	_root = findSet(0);
-	for (unsigned i = 0; i < _MST.size(); ++i)
-		if (_MST[i] == _edges[_root]) {
-			_root_mst = i;
-			break;
-		}
 	cerr << "MST length: " << cost << endl;
 }
 int Steiner::find(int x) {
@@ -219,7 +215,9 @@ int Steiner::find(int x) {
 }
 void Steiner::tarjan(int x) {
 	if (_visit[x]) return;
-	_visit[x] = true;
+	if (x >= _edges.size()) cerr << "p" << x - _edges.size() << endl;
+	else cerr << "e" << x << endl;
+	_ancestor[x] = x;
 	if (x < _edges.size()) {
 		tarjan(_edges[x].left);
 		_grp[_edges[x].left] = _grp[x];
@@ -228,14 +226,15 @@ void Steiner::tarjan(int x) {
 		_grp[_edges[x].right] = _grp[x];
 		_ancestor[find(x)] = x;
 	}
-	_ancestor[x] = x;
-	for (unsigned i = 0; i < _lca_queries.size(); ++i) {
-		auto& query = _lca_queries[i];
-		int v1 = get<0>(query), v2 = get<1>(query);
-		if (v2 == x && _visit[v1])
-			_lca_answer_queries[i] = make_tuple(v1, x, _ancestor[find(v1)]);
-		else if (v1 == x && _visit[v2])
-			_lca_answer_queries[i] = make_tuple(x, v2, _ancestor[find(v2)]);
+	_visit[x] = true;
+	if (x >= _edges.size()) {
+		int u = x - _edges.size();
+		for (unsigned i = 0; i < _lca_queries[u].size(); ++i) {
+			auto& query = _lca_queries[u][i];
+			int v = get<0>(query);
+			if (_visit[v])
+				_lca_answer_queries[u][i] = _ancestor[find(v)];
+		}
 	}
 }
 void Steiner::buildRST() {
@@ -244,60 +243,76 @@ void Steiner::buildRST() {
 	_grp.resize(_edges.size() + _points.size());
 	iota(_grp.begin(), _grp.end(), 0);
 	_lca_answer_queries.resize(_lca_queries.size());
+	for (unsigned i = 0; i < _lca_queries.size(); ++i)
+		_lca_answer_queries[i].resize(_lca_queries.size());
 	tarjan(_root);
 	for (unsigned i = 0; i < _lca_queries.size(); ++i) {
-		int p = get<0>(_lca_queries[i]);
-		int ae = get<2>(_lca_queries[i]);
-		int de = get<2>(_lca_answer_queries[i]);
-		Point& pnt = _points[p];
-		Edge& add_e = _edges[ae];
-		Edge& del_e = _edges[de];
-		int gain = del_e.weight;
-		int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
-		int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
-		int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
-		int mny = min(_points[add_e.p1].y, _points[add_e.p2].y);
-		int sx = pnt.x, sy = pnt.y;
-		if (pnt.x < mnx)      gain -= mnx - pnt.x;
-		else if (pnt.x > mxx) gain -= pnt.x - mxx;
-		if (pnt.y < mny)      gain -= mny - pnt.y;
-		else if (pnt.y > mxy) gain -= pnt.y - mxy;
-		if (gain > 0) _table.emplace_back(p, ae, de, gain);
+		for (unsigned j = 0; j < _lca_queries[i].size(); ++j) {
+			int p = i;
+			int ae = get<1>(_lca_queries[i][j]);
+			int de = _lca_answer_queries[i][j];
+			Point& pnt = _points[p];
+			Edge& add_e = _edges[ae];
+			Edge& del_e = _edges[de];
+			int gain = del_e.weight;
+			int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
+		  int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
+	   	int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
+	  	int mny = min(_points[add_e.p1].y, _points[add_e.p2].y);
+			if (pnt.x < mnx)      gain -= mnx - pnt.x;
+			else if (pnt.x > mxx) gain -= pnt.x - mxx;
+			if (pnt.y < mny)      gain -= mny - pnt.y;
+			else if (pnt.y > mxy) gain -= pnt.y - mxy;
+			if (gain > 0 && gain != del_e.weight) 
+				_table.emplace_back(p, ae, de, gain);
+		}
 	}
 	sort(_table.begin(), _table.end(),
 			[&] (tuple<int, int, int, int> t1, tuple<int, int, int, int> t2) {
 				return get<3>(t1) > get<3>(t2);
 			});
 	for (unsigned i = 0; i < _table.size(); ++i) {
-		Point p = _points[get<0>(_table[i])];
-		Edge& add_e = _edges[get<1>(_table[i])];
-		Edge& del_e = _edges[get<2>(_table[i])];
-		int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
-		int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
-		int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
-		int mny = min(_points[add_e.p1].y, _points[add_e.p2].y);
-		int sx = p.x, sy = p.y;
-		if (p.x < mnx) sx = mnx;
-		else if (p.x > mxx) sx = mxx;
-		if (p.y < mny) sy = mny;
-		else if (p.y > mxy) sy = mxy;
-		if (sx != p.x || sy != p.y) {
-			int pId = get<0>(_table[i]);
-			int new_pId = _points.size();
-			Point new_p = Point(sx, sy);
-			_points.emplace_back(new_p);
-			int weight = abs(p.x - new_p.x) + abs(p.y - new_p.y);
-			int weight1 = abs(_points[add_e.p1].x - new_p.x) + abs(_points[add_e.p1].y - new_p.y);
-			int weight2 = abs(_points[add_e.p2].x - new_p.x) + abs(_points[add_e.p2].y - new_p.y);
-			_newE.emplace_back(Edge(new_pId, pId, weight));
-			_newE.emplace_back(Edge(new_pId, add_e.p1, weight1));
-			_newE.emplace_back(Edge(new_pId, add_e.p2, weight2));
-		}
-		for (unsigned j = 0; j < _table.size(); ++j)
-			if (get<1>(_table[j]) == get<2>(_table[i])) {
-				_table.erase(_table.begin() + j);
-			}
+		cerr << get<0>(_table[i]) << " (" << _edges[get<1>(_table[i])].p1 << ","
+				 << _edges[get<1>(_table[i])].p2 << ")"
+				 << " (" << _edges[get<2>(_table[i])].p1 << ","
+				 << _edges[get<2>(_table[i])].p2 << ") "
+				 << get<3>(_table[i]) << endl;
 	}
+	cerr << "table size: " << _table.size() << endl;
+	//_mst_del_flags.resize(_MST.size());
+	//for (unsigned i = 0; i < _table.size(); ++i) {
+	//	Point p = _points[get<0>(_table[i])];
+	//	Edge& add_e = _edges[get<1>(_table[i])];
+	//	Edge& del_e = _edges[get<2>(_table[i])];
+	//	_mst_del_flags[get<2>(_table[i])] = true;
+	//	int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
+	//	int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
+	//	int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
+	//	int mny = min(_points[add_e.p1].y, _points[add_e.p2].y);
+	//	int sx = p.x, sy = p.y;
+	//	if (p.x < mnx) sx = mnx;
+	//	else if (p.x > mxx) sx = mxx;
+	//	if (p.y < mny) sy = mny;
+	//	else if (p.y > mxy) sy = mxy;
+	//	if (sx != p.x || sy != p.y) {
+	//		int pId = get<0>(_table[i]);
+	//		int new_pId = _points.size();
+	//		Point new_p = Point(sx, sy);
+	//		_points.emplace_back(new_p);
+	//		int weight = abs(p.x - new_p.x) + abs(p.y - new_p.y);
+	//		int weight1 = abs(_points[add_e.p1].x - new_p.x) + 
+	//									abs(_points[add_e.p1].y - new_p.y);
+	//		int weight2 = abs(_points[add_e.p2].x - new_p.x) + 
+	//									abs(_points[add_e.p2].y - new_p.y);
+	//		_newE.emplace_back(Edge(new_pId, pId, weight));
+	//		_newE.emplace_back(Edge(new_pId, add_e.p1, weight1));
+	//		_newE.emplace_back(Edge(new_pId, add_e.p2, weight2));
+	//	}
+	//	for (unsigned j = 0; j < _table.size(); ++j)
+	//		if (get<1>(_table[j]) == get<2>(_table[i])) {
+	//			_table.erase(_table.begin() + j);
+	//		}
+	//}
 }
 void Steiner::plot() {
 	string ofileName = _name + ".plt";
@@ -317,6 +332,8 @@ void Steiner::plot() {
 		of << "set object circle at first " << _points[i].x << ","
 			 << _points[i].y << " radius char 0.3 fillstyle solid "
 			 << "fc rgb \"red\" front\n";
+		of << "set label \"p" << i << "\" at " << _points[i].x + 2<< ","
+			 << _points[i].y + 2<< endl; 
 	}
 	// RSG
 	for (unsigned i = 0; i < _edges.size(); ++i) {
@@ -324,6 +341,9 @@ void Steiner::plot() {
 			 << _points[_edges[i].p1].x << "," << _points[_edges[i].p1].y << " to "
 			 << _points[_edges[i].p2].x << "," << _points[_edges[i].p2].y 
 			 << " nohead lc rgb \"white\" lw 1 front\n";
+		of << "set label \"e" << i << "\" at " 
+			 << (_points[_edges[i].p1].x + _points[_edges[i].p2].x) / 2 << ","
+			 << (_points[_edges[i].p1].y + _points[_edges[i].p2].y) / 2 << endl;
 	}
 	// MST
 	for (unsigned i = 0; i < _MST.size(); ++i) {
@@ -339,16 +359,27 @@ void Steiner::plot() {
 			 << "fc rgb \"yellow\" front\n";
 	}
 	// RST
-	for (unsigned i = 0; i < _newE.size(); ++i) {
-		of << "set arrow " << idx++ << " from "
-		   << _points[_newE[i].p1].x << "," << _points[_newE[i].p1].y << " to "
-			 << _points[_newE[i].p2].x << "," << _points[_newE[i].p1].y
-			 << " nohead lc rgb \"black\" lw 1.5 front\n";
-	  of << "set arrow " << idx++ << " from "
-		   << _points[_newE[i].p2].x << "," << _points[_newE[i].p1].y << " to "
-			 << _points[_newE[i].p2].x << "," << _points[_newE[i].p2].y
-			 << " nohead lc rgb \"black\" lw 1.5 front\n";
-	}
+	//for (unsigned i = 0; i < _MST.size(); ++i) {
+	//	if (_mst_del_flags[i]) continue;
+	//	of << "set arrow " << idx++ << " from "
+	//	   << _points[_MST[i].p1].x << "," << _points[_MST[i].p1].y << " to "
+	//		 << _points[_MST[i].p2].x << "," << _points[_MST[i].p1].y
+	//		 << " nohead lc rgb \"black\" lw 1.5 front\n";
+	//	of << "set arrow " << idx++ << " from "
+	//	   << _points[_MST[i].p2].x << "," << _points[_MST[i].p1].y << " to "
+	//		 << _points[_MST[i].p2].x << "," << _points[_MST[i].p2].y
+	//		 << " nohead lc rgb \"black\" lw 1.5 front\n";
+	//}
+	//for (unsigned i = 0; i < _newE.size(); ++i) {
+	//	of << "set arrow " << idx++ << " from "
+	//	   << _points[_newE[i].p1].x << "," << _points[_newE[i].p1].y << " to "
+	//		 << _points[_newE[i].p2].x << "," << _points[_newE[i].p1].y
+	//		 << " nohead lc rgb \"black\" lw 1.5 front\n";
+	//  of << "set arrow " << idx++ << " from "
+	//	   << _points[_newE[i].p2].x << "," << _points[_newE[i].p1].y << " to "
+	//		 << _points[_newE[i].p2].x << "," << _points[_newE[i].p2].y
+	//		 << " nohead lc rgb \"black\" lw 1.5 front\n";
+	//}
 	of << "plot 1000000000" << endl;
 	of << "pause -1 'Press any key'" << endl;
 	of.close();

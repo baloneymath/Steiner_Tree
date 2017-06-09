@@ -35,12 +35,13 @@ class Steiner {
 		vector<Point> _points;
 		vector<Edge> _edges;
 		vector<Edge> _MST;
-		vector<tuple<int, int, int>> _lca_queries; // p, p, e
-		vector<tuple<int, int, int>> _lca_answer_queries; // p, p, e
+		vector<bool> _mst_del_flags;
+		vector<vector<tuple<int, int>>> _lca_queries; // p, e
+		vector<vector<int>> _lca_answer_queries; // longest e
 		vector<bool> _visit;
 		vector<int>  _ancestor;
 		vector<int>  _grp;
-		int _root, _root_mst;
+		int _root;
 		vector<tuple<int, int, int, int>> _table;
 		vector<Edge>  _newE;
 };
