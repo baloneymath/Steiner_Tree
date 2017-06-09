@@ -445,3 +445,42 @@ void Steiner::plot() {
 	of << "pause -1 'Press any key'" << endl;
 	of.close();
 }
+void Steiner::outfile(const string& outfileName) {
+	ofstream of(outfileName, ofstream::out);
+	of << "NumRoutedPins = " << _init_p << endl;
+	of << "WireLength = " << _MRST_cost << endl;
+	for (unsigned i = 0; i < _MST.size(); ++i) {
+		if (_mst_del[_MST[i]]) continue;
+		Point& p1 = _points[_edges[_MST[i]].p1];
+		Point& p2 = _points[_edges[_MST[i]].p2];
+		if (p1.x != p2.x) {
+			of << "H-line "
+				 << "(" << p1.x << "," << p1.y << ")"
+				 << "(" << p2.x << "," << p1.y << ")"
+				 << endl; 
+		}
+		if (p1.y != p2.y) {
+			of << "V-line "
+				 << "(" << p2.x << "," << p1.y << ")"
+				 << "(" << p2.x << "," << p2.y << ")"
+				 << endl; 
+		}
+	}
+	for (unsigned i = 0; i < _newE.size(); ++i) {
+		Point& p1 = _points[_newE[i].p1];
+		Point& p2 = _points[_newE[i].p2];
+		if (p1.x != p2.x) {
+			of << "H-line "
+				 << "(" << p1.x << "," << p1.y << ")"
+				 << "(" << p2.x << "," << p1.y << ")"
+				 << endl; 
+		}
+		if (p1.y != p2.y) {
+			of << "V-line "
+				 << "(" << p2.x << "," << p1.y << ")"
+				 << "(" << p2.x << "," << p2.y << ")"
+				 << endl; 
+		}
+	}
+	of.close();
+}

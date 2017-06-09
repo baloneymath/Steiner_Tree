@@ -19,6 +19,7 @@ class Steiner {
 		void parse(const string& fileName);
 		inline void plot();
 		void solve();
+		void outfile(const string& outfileName);
 	private: // helper functions
 		Point string2Point(string str);
 		void init();
