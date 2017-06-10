@@ -64,8 +64,13 @@ void Steiner::init() {
 	_edges.clear();
 	_MST.clear();
 	_mst_del.clear();
+	_lca_place.clear();
 	_lca_queries.clear();
 	_lca_answer_queries.clear();
+	_visit.clear();
+	_ancestor.clear();
+	_par.clear();
+	_rank.clear();
 	_newE.clear();
 	_table.clear();
 	_table_illegal.clear();
@@ -75,16 +80,16 @@ void Steiner::solve() {
 	buildMST();
 	for (unsigned eId : _MST) _MST_cost += _edges[eId].weight;
 	buildRST();
-	//unsigned numIter = 2;
-	//if (_init_p >= 10) numIter = 2;
-	//if (_init_p >= 100) numIter = 3;
-	//if (_init_p >= 500) numIter = 4;
-	//for (unsigned iter = 1; iter < numIter; ++iter) {
-	//	init();
-	//	buildRSG();
-	//	buildMST();
-	//	buildRST();
-	//}
+	unsigned numIter = 2;
+	if (_init_p >= 10) numIter = 2;
+	if (_init_p >= 100) numIter = 3;
+	if (_init_p >= 500) numIter = 4;
+	for (unsigned iter = 1; iter < numIter; ++iter) {
+		init();
+		buildRSG();
+		buildMST();
+		buildRST();
+	}
 	for (auto& e : _newE) _MRST_cost += e.weight;
 	for (unsigned eId : _MST) {
 		if (_mst_del[eId]) continue;
@@ -97,7 +102,7 @@ void Steiner::solve() {
 	cerr << "Improvement: " 
 			 << (float)(_MST_cost - _MRST_cost) / _MST_cost * 100 
 			 << "%" << endl;
-	plot();
+	//plot();
 }
 void Steiner::addEdge(int p1, int p2) {
 	if (p1 == p2) return;
@@ -134,7 +139,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
-					break;
+					//break;
 				}
 			} while (it != A1.begin());
 		}
@@ -148,7 +153,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
-					break;
+					//break;
 				}
 			} while (it != A2.begin());
 		}
@@ -169,7 +174,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x > 0) {
 					addEdge(pId, (*it).second);
 					it = A1.erase(it);
-					break;
+					//break;
 				}
 			} while (it != A1.begin());
 		}
@@ -183,7 +188,7 @@ void Steiner::buildRSG() {
 						p.x - tmp.x >= 0) {
 					addEdge(pId, (*it).second);
 					it = A2.erase(it);
-					break;
+					//break;
 				}
 			} while (it != A2.begin());
 		}
@@ -213,7 +218,7 @@ void Steiner::buildMST() {
 		_edges[i].parent = i;
 	for (unsigned i = 0; i < _points.size(); ++i)
 		_points[i].parent = i + _edges.size();
-	_lca_queries.resize(_points.size());
+	_lca_place.resize(_points.size());
 	for (unsigned i = 0; i < _edges.size(); ++i) {
 		Edge& e = _edges[i];
 		int head1 = findSet(e.p1);
@@ -225,8 +230,16 @@ void Steiner::buildMST() {
 			neighbors.erase(e.p1);
 			neighbors.erase(e.p2);
 			for (auto& w : neighbors) {
-				if (head1 == findSet(w)) _lca_queries[w].emplace_back(e.p1, i);
-				else                     _lca_queries[w].emplace_back(e.p2, i);
+				if (head1 == findSet(w)) {
+					_lca_place[w].emplace_back(_lca_queries.size());
+					_lca_place[e.p1].emplace_back(_lca_queries.size());
+					_lca_queries.emplace_back(w, e.p1, i);
+				}
+				else {
+					_lca_place[w].emplace_back(_lca_queries.size());
+					_lca_place[e.p2].emplace_back(_lca_queries.size());
+					_lca_queries.emplace_back(w, e.p2, i);
+				}
 			}
 			if (head1 >= _edges.size()) _points[e.p1].parent = i;
 			else _edges[head1].parent = i;
@@ -250,7 +263,7 @@ void Steiner::tarunion(int x, int y) {
 	else if (_rank[xroot] < _rank[yroot]) _par[xroot] = yroot;
 	else {
 		_par[yroot] = xroot;
-		_rank[xroot] += 1;
+		++_rank[xroot];
 	}
 }
 void Steiner::tarjan(int x) {
@@ -270,37 +283,38 @@ void Steiner::tarjan(int x) {
 	_visit[x] = true;
 	if (x >= _edges.size()) {
 		int u = x - _edges.size();
-		for (unsigned i = 0; i < _lca_queries[u].size(); ++i) {	
-			int v = _lca_queries[u][i].first + _edges.size();
+		for (unsigned i = 0; i < _lca_place[u].size(); ++i) {	
+			int which = _lca_place[u][i];
+			int v = get<0>(_lca_queries[which]) == u ? 
+							get<1>(_lca_queries[which]) : get<0>(_lca_queries[which]);
+			v += _edges.size();
 			if (_visit[v])
-				_lca_answer_queries[u][i] = _ancestor[tarfind(v)];
+				_lca_answer_queries[which] = _ancestor[tarfind(v)];
 		}
 	}
 }
 void Steiner::bruteforceLCA() {
 	for (unsigned i = 0; i < _lca_queries.size(); ++i) {
-		for (unsigned j = 0; j < _lca_queries[i].size(); ++j) {
-			int u = i, v = _lca_queries[i][j].first;
-			int puId = _points[u].parent;
-			int pvId = _points[v].parent;
-			Edge pu = _edges[puId];
-			Edge pv = _edges[pvId];
-			vector<int> pus, pvs;
-			pus.emplace_back(puId);
-			pvs.emplace_back(pvId);
-			while (pu.parent != puId) {
-				pus.emplace_back(pu.parent);
-				puId = pu.parent;
-				pu = _edges[puId];
-			}
-			while (pv.parent != pvId) {
-				pvs.emplace_back(pv.parent);
-				pvId = pv.parent;
-				pv = _edges[pvId];
-			}
-			auto it = find_first_of(pus.begin(), pus.end(), pvs.begin(), pvs.end());
-			_lca_answer_queries[i][j] = *it;
+		int u = get<0>(_lca_queries[i]), v = get<1>(_lca_queries[i]);
+		int puId = _points[u].parent;
+		int pvId = _points[v].parent;
+		Edge pu = _edges[puId];
+		Edge pv = _edges[pvId];
+		vector<int> pus, pvs;
+		pus.emplace_back(puId);
+		pvs.emplace_back(pvId);
+		while (pu.parent != puId) {
+			pus.emplace_back(pu.parent);
+			puId = pu.parent;
+			pu = _edges[puId];
 		}
+		while (pv.parent != pvId) {
+			pvs.emplace_back(pv.parent);
+			pvId = pv.parent;
+			pv = _edges[pvId];
+		}
+		auto it = find_first_of(pus.begin(), pus.end(), pvs.begin(), pvs.end());
+		_lca_answer_queries[i] = *it;
 	}
 }
 void Steiner::buildRST() {
@@ -309,32 +323,27 @@ void Steiner::buildRST() {
 	_rank.resize(_edges.size() + _points.size());
 	_par.resize(_edges.size() + _points.size());
 	_lca_answer_queries.resize(_lca_queries.size());
-	for (unsigned i = 0; i < _lca_queries.size(); ++i)
-		_lca_answer_queries[i].resize(_lca_queries[i].size());
 	tarjan(_root);
 	//bruteforceLCA();
+	_table.reserve(_lca_queries.size());
 	for (unsigned i = 0; i < _lca_queries.size(); ++i) {
-		for (unsigned j = 0; j < _lca_queries[i].size(); ++j) {
-			int p = i;
-			int ae = _lca_queries[i][j].second;
-			int de = _lca_answer_queries[i][j];
-			cerr << "(" << p << "," << _lca_queries[i][j].first << "," << de << ") ";
-			Point& pnt = _points[p];
-			Edge& add_e = _edges[ae];
-			Edge& del_e = _edges[de];
-			long gain = del_e.weight;
-			int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
-		  int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
-	   	int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
-	  	int mny = min(_points[add_e.p1].y, _points[add_e.p2].y);
-			if (pnt.x < mnx)      gain -= mnx - pnt.x;
-			else if (pnt.x > mxx) gain -= pnt.x - mxx;
-			if (pnt.y < mny)      gain -= mny - pnt.y;
-			else if (pnt.y > mxy) gain -= pnt.y - mxy;
-			if (gain > 0 && gain != del_e.weight) 
-				_table.emplace_back(p, ae, de, gain);
-		}
-		cerr << endl;
+		int p = get<0>(_lca_queries[i]);
+		int ae = get<2>(_lca_queries[i]);
+		int de = _lca_answer_queries[i];
+		//cerr << "(" << p << "," << get<1>(_lca_queries[i]) << "," << de << ") ";
+		Point& pnt = _points[p];
+		Edge& add_e = _edges[ae];
+		Edge& del_e = _edges[de];
+		long gain = del_e.weight;
+		int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
+		int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
+		int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
+		int mny = min(_points[add_e.p1].y, _points[add_e.p2].y);
+		if (pnt.x < mnx)      gain -= mnx - pnt.x;
+		else if (pnt.x > mxx) gain -= pnt.x - mxx;
+		if (pnt.y < mny)      gain -= mny - pnt.y;
+		else if (pnt.y > mxy) gain -= pnt.y - mxy;
+		if (gain > 0) _table.emplace_back(p, ae, de, gain);
 	}
 	sort(_table.begin(), _table.end(),
 			[&] (tuple<int, int, int, long> t1, tuple<int, int, int, long> t2) {
@@ -347,12 +356,9 @@ void Steiner::buildRST() {
 	//			 << _edges[get<2>(_table[i])].p2 << ") "
 	//			 << get<3>(_table[i]) << endl;
 	//}
-	//cerr << "table size: " << _table.size() << endl;
 	_mst_del.resize(_edges.size());
 	_table_illegal.resize(_table.size());
 	for (unsigned i = 0; i < _table.size(); ++i) {
-		//auto it = std::find(_table_illegal.begin(), _table_illegal.end(), i);
-		//if (it != _table_illegal.end()) continue;
 		if (_table_illegal[i]) continue;
 		_mst_del[get<1>(_table[i])] = true;
 		_mst_del[get<2>(_table[i])] = true;
@@ -382,13 +388,12 @@ void Steiner::buildRST() {
 			_newE.emplace_back(Edge(new_pId, add_e.p1, weight1));
 			_newE.emplace_back(Edge(new_pId, add_e.p2, weight2));
 		}
-		for (unsigned j = i; j < _table.size(); ++j)
+		for (unsigned j = i; j < _table.size(); ++j) {
 			if (get<1>(_table[j]) == get<2>(_table[i]) ||
 			    get<2>(_table[j]) == get<2>(_table[i]) ||
 					get<2>(_table[j]) == get<1>(_table[i]) ||
-					get<1>(_table[j]) == get<1>(_table[i])) {
-				_table_illegal[j] = true;
-			}
+					get<1>(_table[j]) == get<1>(_table[i])) _table_illegal[j] = true;
+		}
 	}
 
 }

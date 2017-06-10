@@ -38,18 +38,19 @@ class Steiner {
 		int _boundaryLeft, _boundaryRight;
 		int _boundaryTop, _boundaryBottom;
 		unsigned _init_p;
+		int _root;
 		vector<Point> _points;
 		vector<Edge> _edges;
 		vector<unsigned> _MST;
 		vector<bool> _mst_del;
-		vector<vector<pair<int, int>>> _lca_queries; // p, e
-		vector<vector<int>> _lca_answer_queries; // longest e
+		vector<tuple<int, int, int>> _lca_queries; // p, p, e
+		vector<int> _lca_answer_queries; // longest e
+		vector<vector<int>> _lca_place;
 		// tarjan -------------
 		vector<bool> _visit;
 		vector<int>  _ancestor;
 		vector<int>  _par;
 		vector<int>  _rank;
-		int _root;
 		//----------------------
 		vector<tuple<int, int, int, long>> _table;
 		vector<bool> _table_illegal;
