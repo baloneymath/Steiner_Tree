@@ -102,7 +102,6 @@ void Steiner::solve() {
 	cerr << "Improvement: " 
 			 << (float)(_MST_cost - _MRST_cost) / _MST_cost * 100 
 			 << "%" << endl;
-	//plot();
 }
 void Steiner::addEdge(int p1, int p2) {
 	if (p1 == p2) return;
@@ -253,8 +252,7 @@ void Steiner::buildMST() {
 	_root = findSet(0);
 }
 int Steiner::tarfind(int x) {
-	if (x != _par[x]) _par[x] = tarfind(_par[x]);
-	return _par[x];
+	return x == _par[x] ? _par[x] : (_par[x] = tarfind(_par[x]));
 }
 void Steiner::tarunion(int x, int y) {
 	int xroot = tarfind(x);
@@ -267,9 +265,6 @@ void Steiner::tarunion(int x, int y) {
 	}
 }
 void Steiner::tarjan(int x) {
-	if (_visit[x]) return;
-	//if (x >= _edges.size()) cerr << "p" << x - _edges.size() << endl;
-	//else cerr << "e" << x << endl;
 	_par[x] = x;
 	_ancestor[x] = x;
 	if (x < _edges.size()) {
@@ -397,9 +392,9 @@ void Steiner::buildRST() {
 	}
 
 }
-void Steiner::plot() {
-	string ofileName = _name + ".plt";
-	fstream of(ofileName, ofstream::out);
+void Steiner::plot(const string& plotName) {
+	string ofileName = plotName;
+	ofstream of(ofileName, ofstream::out);
 	of << "set size ratio -1" << endl;
 	of << "set nokey" << endl;
 	of << "set xrange[" << -_boundaryRight * 0.1 << ":" 
