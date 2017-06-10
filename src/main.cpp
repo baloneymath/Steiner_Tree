@@ -5,9 +5,9 @@
 #include "Steiner.h"
 using namespace std;
 
-bool doplot, outfile;
+bool gDoplot, gOutfile;
 string plotName, outfileName;
-bool handleArgument( const int& argc, char** argv) {
+bool handleArgument(const int& argc, char** argv) {
 	int i;
 	if (argc < 2) {
 		fprintf(stderr, "Usage: ./steiner <input> [-out <.out>] [-plot <.plt>]\n");
@@ -19,11 +19,11 @@ bool handleArgument( const int& argc, char** argv) {
 			continue;
 		}
 		else if (strcmp(argv[i] + 1, "plot") == 0) {
-			doplot = true;
+			gDoplot = true;
 			plotName = argv[++i];
 		}
 		else if (strcmp(argv[i] + 1, "out") == 0) {
-			outfile = true;
+			gOutfile = true;
 			outfileName = argv[++i];
 		}	
 		++i;
@@ -35,10 +35,10 @@ int main(int argc, char** argv) {
   cin.tie(0);
 	if (!handleArgument(argc, argv)) return -1;
 	string fileName = argv[1];
-	Steiner steiner;
-	steiner.parse(argv[1]);
-	steiner.solve();
-	if (doplot) steiner.plot(plotName);
-	if (outfile) steiner.outfile(outfileName);
+	Steiner st;
+	st.parse(argv[1]);
+	st.solve();
+	if (gDoplot) st.plot(plotName);
+	if (gOutfile) st.outfile(outfileName);
 	return 0;
 }

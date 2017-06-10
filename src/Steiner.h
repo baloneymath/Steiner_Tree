@@ -3,61 +3,64 @@
 
 #include <vector>
 #include <string>
-#include <map>
 #include <tuple>
-#include <utility>
 #include "datastructure.h"
-using namespace std;
 
 class Steiner {
-	public:
-		Steiner() :
-			_name(""), _boundaryLeft(-1), _boundaryRight(-1),
-			_boundaryTop(-1), _boundaryBottom(-1), 
-			_MST_cost(0), _MRST_cost(0) {}
-		~Steiner() {}
+  public:
+    Steiner() :
+      _name(""), _boundaryLeft(-1), _boundaryRight(-1),
+      _boundaryTop(-1), _boundaryBottom(-1),
+      _MST_cost(0), _MRST_cost(0) {}
+    ~Steiner() {}
 
-		void parse(const string& fileName);
-		void plot(const string& plotName);
-		void solve();
-		void outfile(const string& outfileName);
-	private: // helper functions
-		Point string2Point(string str);
-		void init();
-		void buildRSG();
-		void buildMST();
-		void buildRST();
-		void addEdge(int p1, int p2);
-		int  findSet(int pId);
-		int  tarfind(int x);
-		void tarunion(int x, int y);
-		void tarjan(int x);
-		void bruteforceLCA();
-	private: // members
-		string _name;
-		int _boundaryLeft, _boundaryRight;
-		int _boundaryTop, _boundaryBottom;
-		unsigned _init_p;
-		int _root;
-		vector<Point> _points;
-		vector<Edge> _edges;
-		vector<unsigned> _MST;
-		vector<bool> _mst_del;
-		vector<tuple<int, int, int>> _lca_queries; // p, p, e
-		vector<int> _lca_answer_queries; // longest e
-		vector<vector<int>> _lca_place;
-		// tarjan -------------
-		vector<bool> _visit;
-		vector<int>  _ancestor;
-		vector<int>  _par;
-		vector<int>  _rank;
-		//----------------------
-		vector<tuple<int, int, int, long>> _table;
-		vector<bool> _table_illegal;
-		vector<Edge>  _newE;
+    void parse(const std::string& fileName);
+    void solve();
+    void plot(const std::string& plotName);
+    void outfile(const std::string& outfileName);
+  private: // helper functions
+    // parse ---------------------
+    Point string2Point(std::string str);
+    void  addEdge(int p1, int p2);
+    // solve ---------------------
+    int  findSet(int pId);
+    void init();
+    void buildRSG();
+    void buildMST();
+    void buildRST();
+    // LCA -----------------------
+    int  tarfind(int x);
+    void tarunion(int x, int y);
+    void tarjanLCA(int x);
+    void bruteforceLCA();
+  private: // members
+    std::string _name;
+    int _boundaryLeft, _boundaryRight;
+    int _boundaryTop, _boundaryBottom;
+    int _init_p;
+    int _root;
+    std::vector<Point> _points;
+    std::vector<Edge>  _edges;
+    std::vector<int>   _MST;
+    std::vector<bool>  _MST_del;
+    std::vector<std::vector<int>>          _lca_place; // adj-list of place in _lca_queries
+    std::vector<std::tuple<int, int, int>> _lca_queries; // p, p, e
+    std::vector<int>                       _lca_answer_queries; // longest e
+    // tarjan -------------
+    std::vector<bool> _visit;
+    std::vector<int>  _ancestor;
+    std::vector<int>  _par;
+    std::vector<int>  _rank;
+    //----------------------
+    std::vector<std::tuple<int, int, int, int>> _table;
+    std::vector<bool> _table_del;
+    std::vector<Edge> _newE;
 
-		long _MST_cost;
-		long _MRST_cost;
+    long long _MST_cost;
+    long long _MRST_cost;
+    // plot ----------------
+    std::vector<Edge> _init_edges;
+    std::vector<int>  _init_MST;
 };
 
 #endif
