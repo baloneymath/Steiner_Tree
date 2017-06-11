@@ -22,7 +22,7 @@ class Steiner {
     // parse ---------------------
     void  addEdge(int p1, int p2);
     // solve ---------------------
-    int  findSet(int pId);
+    unsigned findSet(int pId);
     void init();
     void buildRSG();
     void buildMST();

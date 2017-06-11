@@ -229,12 +229,12 @@ void Steiner::buildRSG() {
   }
 
 }
-int Steiner::findSet(int pId) {
-  int ans = _points[pId].parent;
-  if (ans >= (int)_edges.size()) return ans;
+unsigned Steiner::findSet(int pId) {
+  unsigned ans = _points[pId].parent;
+  if (ans >= _edges.size()) return ans;
   else {
     Edge e = _edges[ans];
-    while (e.parent != ans) {
+    while (e.parent != (int)ans) {
       ans = e.parent;
       e = _edges[e.parent];
     }
@@ -246,15 +246,15 @@ void Steiner::buildMST() {
       [] (Edge e1, Edge e2) {
         return e1.weight < e2.weight;
       });
-  for (unsigned i = 0; i < _edges.size(); ++i)
-    _edges[i].parent = i;
   for (unsigned i = 0; i < _points.size(); ++i)
     _points[i].parent = i + _edges.size();
   _lca_place.resize(_points.size());
+  unsigned cnt_p = 0;
   for (unsigned i = 0; i < _edges.size(); ++i) {
     Edge& e = _edges[i];
-    int head1 = findSet(e.p1);
-    int head2 = findSet(e.p2);
+    e.parent = i;
+    unsigned head1 = findSet(e.p1);
+    unsigned head2 = findSet(e.p2);
     if (head1 != head2) {
       set<int> neighbors;
       for (int n : _points[e.p1].neighbors) neighbors.emplace(n);
@@ -273,13 +273,14 @@ void Steiner::buildMST() {
           _lca_queries.emplace_back(w, e.p2, i);
         }
       }
-      if (head1 >= (int)_edges.size()) _points[e.p1].parent = i;
+      if (head1 >= _edges.size()) { _points[e.p1].parent = i; ++cnt_p; }
       else _edges[head1].parent = i;
-      if (head2 >= (int)_edges.size()) _points[e.p2].parent = i;
+      if (head2 >= _edges.size()) { _points[e.p2].parent = i; ++cnt_p; }
       else _edges[head2].parent = i;
-      _edges[i].left = head1;
-      _edges[i].right = head2;
+      e.left = head1;
+      e.right = head2;
       _MST.emplace_back(i);
+      if (cnt_p == _points.size()) break;
     }
   }
   _root = findSet(0);
