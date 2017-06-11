@@ -9,7 +9,7 @@ using namespace std;
 bool gDoplot, gOutfile;
 string plotName, outfileName;
 bool handleArgument(const int& argc, char** argv) {
-	int i;
+	int i = 0;
 	if (argc < 2) {
 		fprintf(stderr, "Usage: ./steiner <input> [-out <.out>] [-plot <.plt>]\n");
 		return false;

@@ -33,9 +33,10 @@ inline Point string2Point(string str) {
 inline string getFileName(const string& filePathName, bool getFile) {
   string retStr = filePathName;
   string::size_type pos = retStr.rfind("/");
-  if (pos != string::npos)
+  if (pos != string::npos) {
     if (getFile) retStr = retStr.substr(pos + 1);
     else retStr = retStr.substr(0, pos);
+  }
   return retStr;
 }
 void Steiner::parse(const string& fileName) {
@@ -230,7 +231,7 @@ void Steiner::buildRSG() {
 }
 int Steiner::findSet(int pId) {
   int ans = _points[pId].parent;
-  if (ans >= _edges.size()) return ans;
+  if (ans >= (int)_edges.size()) return ans;
   else {
     Edge e = _edges[ans];
     while (e.parent != ans) {
@@ -272,9 +273,9 @@ void Steiner::buildMST() {
           _lca_queries.emplace_back(w, e.p2, i);
         }
       }
-      if (head1 >= _edges.size()) _points[e.p1].parent = i;
+      if (head1 >= (int)_edges.size()) _points[e.p1].parent = i;
       else _edges[head1].parent = i;
-      if (head2 >= _edges.size()) _points[e.p2].parent = i;
+      if (head2 >= (int)_edges.size()) _points[e.p2].parent = i;
       else _edges[head2].parent = i;
       _edges[i].left = head1;
       _edges[i].right = head2;
@@ -299,7 +300,7 @@ void Steiner::tarunion(int x, int y) {
 void Steiner::tarjanLCA(int x) {
   _par[x] = x;
   _ancestor[x] = x;
-  if (x < _edges.size()) {
+  if (x < (int)_edges.size()) {
     tarjanLCA(_edges[x].left);
     tarunion(x, _edges[x].left);
     _ancestor[tarfind(x)] = x;
@@ -308,7 +309,7 @@ void Steiner::tarjanLCA(int x) {
     _ancestor[tarfind(x)] = x;
   }
   _visit[x] = true;
-  if (x >= _edges.size()) {
+  if (x >= (int)_edges.size()) {
     int u = x - _edges.size();
     for (unsigned i = 0; i < _lca_place[u].size(); ++i) {	
       int which = _lca_place[u][i];
@@ -390,7 +391,6 @@ void Steiner::buildRST() {
     _MST_del[get<2>(_table[i])] = true;
     Point p = _points[get<0>(_table[i])];
     Edge& add_e = _edges[get<1>(_table[i])];
-    Edge& del_e = _edges[get<2>(_table[i])];
     int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
     int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
     int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
@@ -439,7 +439,7 @@ void Steiner::plot(const string& plotName) {
      << _boundaryLeft << "," << _boundaryBottom << " to "
      << _boundaryRight << "," << _boundaryTop << "fc rgb \"grey\" behind\n";
   // point
-  for (unsigned i = 0; i < _init_p; ++i) {
+  for (int i = 0; i < _init_p; ++i) {
     of << "set object circle at first " << _points[i].x << ","
        << _points[i].y << " radius char 0.3 fillstyle solid "
        << "fc rgb \"red\" front\n";
