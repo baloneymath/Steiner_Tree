@@ -10,8 +10,7 @@
 #include "Steiner.h"
 using namespace std;
 
-inline void split(string& str, const string& delim, vector<string>& v)
-{
+inline void split(string& str, const string& delim, vector<string>& v) {
   size_t pos = 0;
   string token;
   v.clear();
@@ -52,7 +51,7 @@ void Steiner::parse(const string& fileName) {
   p = string2Point(buf);
   _boundaryRight = p.x;
   _boundaryTop = p.y;
-  
+
   ifs >> buf >> buf >> buf;
   _points.resize(stoi(buf));
   _init_p = _points.size();
@@ -64,6 +63,8 @@ void Steiner::parse(const string& fileName) {
 }
 void Steiner::init() {
   _edges.clear();
+  _grps.clear();
+  _p_set.clear();
   _MST.clear();
   _MST_del.clear();
   _lca_place.clear();
@@ -76,31 +77,32 @@ void Steiner::init() {
   _newE.clear();
   _table.clear();
   _table_del.clear();
+  _table_place.clear();
 }
 extern bool gDoplot;
 void Steiner::solve() {
 #ifdef VERBOSE
-	TimeUsage timer;
+  TimeUsage timer;
 #endif
   buildRSG();
 #ifdef VERBOSE
-	timer.showUsage("buildRSG", TimeUsage::PARTIAL);
-	timer.start(TimeUsage::PARTIAL);
+  timer.showUsage("buildRSG", TimeUsage::PARTIAL);
+  timer.start(TimeUsage::PARTIAL);
 #endif
   buildMST();
 #ifdef VERBOSE
-	timer.showUsage("buildMST", TimeUsage::PARTIAL);
-	timer.start(TimeUsage::PARTIAL);
+  timer.showUsage("buildMST", TimeUsage::PARTIAL);
+  timer.start(TimeUsage::PARTIAL);
 #endif
   if (gDoplot) {
     _init_edges = _edges;
     _init_MST = _MST;
   }
-  for (unsigned eId : _MST) _MST_cost += _edges[eId].weight;
+  for (int eId : _MST) _MST_cost += _edges[eId].weight;
   buildRST();
 #ifdef VERBOSE
-	timer.showUsage("buildRST", TimeUsage::PARTIAL);
-	timer.start(TimeUsage::PARTIAL);
+  timer.showUsage("buildRST", TimeUsage::PARTIAL);
+  timer.start(TimeUsage::PARTIAL);
 #endif
   unsigned numIter = 2;
   if (_init_p >= 10) numIter = 2;
@@ -110,18 +112,18 @@ void Steiner::solve() {
     init();
     buildRSG();
 #ifdef VERBOSE
-	timer.showUsage("buildRSG", TimeUsage::PARTIAL);
-	timer.start(TimeUsage::PARTIAL);
+  timer.showUsage("buildRSG", TimeUsage::PARTIAL);
+  timer.start(TimeUsage::PARTIAL);
 #endif
     buildMST();
 #ifdef VERBOSE
-	timer.showUsage("buildMST", TimeUsage::PARTIAL);
-	timer.start(TimeUsage::PARTIAL);
+  timer.showUsage("buildMST", TimeUsage::PARTIAL);
+  timer.start(TimeUsage::PARTIAL);
 #endif
     buildRST();
 #ifdef VERBOSE
-	timer.showUsage("buildRST", TimeUsage::PARTIAL);
-	timer.start(TimeUsage::PARTIAL);
+  timer.showUsage("buildRST", TimeUsage::PARTIAL);
+  timer.start(TimeUsage::PARTIAL);
 #endif
   }
   for (auto& e : _newE) _MRST_cost += e.weight;
@@ -133,14 +135,14 @@ void Steiner::solve() {
   cerr << "RSG edge   : " << _edges.size() << endl;
   cerr << "MST length : " << _MST_cost << endl;
   cerr << "MRST length: " << _MRST_cost << endl;
-  cerr << "Improvement: " 
-       << (double)(_MST_cost - _MRST_cost) / _MST_cost * 100 
+  cerr << "Improvement: "
+       << (double)(_MST_cost - _MRST_cost) / _MST_cost * 100
        << "%" << endl;
 }
 void Steiner::addEdge(int p1, int p2) {
   if (p1 == p2) return;
   int weight = abs(_points[p1].x - _points[p2].x) +
-           		 abs(_points[p1].y - _points[p2].y);
+                abs(_points[p1].y - _points[p2].y);
   _edges.emplace_back(Edge(p1, p2, weight));
   _points[p1].neighbors.emplace_back(p2);
   _points[p2].neighbors.emplace_back(p1);
@@ -166,7 +168,7 @@ void Steiner::buildRSG() {
       do {
         --it;
         Point& tmp = _points[it->second];
-        if (p.y - tmp.y >= p.x - tmp.x && 
+        if (p.y - tmp.y >= p.x - tmp.x &&
             p.y - tmp.y > 0 &&
             p.x - tmp.x > 0) {
           addEdge(pId, it->second);
@@ -180,7 +182,7 @@ void Steiner::buildRSG() {
       do {
         --it;
         Point& tmp = _points[it->second];
-        if (p.y - tmp.y < p.x - tmp.x && 
+        if (p.y - tmp.y < p.x - tmp.x &&
             p.y - tmp.y >= 0 &&
             p.x - tmp.x > 0) {
           addEdge(pId, it->second);
@@ -201,7 +203,7 @@ void Steiner::buildRSG() {
       do {
         --it;
         Point& tmp = _points[it->second];
-        if (tmp.y - p.y <= p.x - tmp.x && 
+        if (tmp.y - p.y <= p.x - tmp.x &&
             p.y - tmp.y < 0 &&
             p.x - tmp.x > 0) {
           addEdge(pId, it->second);
@@ -215,7 +217,7 @@ void Steiner::buildRSG() {
       do {
         --it;
         Point& tmp = _points[it->second];
-        if (tmp.y - p.y > p.x - tmp.x && 
+        if (tmp.y - p.y > p.x - tmp.x &&
             p.y - tmp.y < 0 &&
             p.x - tmp.x >= 0) {
           addEdge(pId, it->second);
@@ -230,29 +232,19 @@ void Steiner::buildRSG() {
 
 }
 unsigned Steiner::findSet(int pId) {
-  unsigned ans = _points[pId].parent;
-  if (ans >= _edges.size()) return ans;
-  else {
-    Edge e = _edges[ans];
-    while (e.parent != (int)ans) {
-      ans = e.parent;
-      e = _edges[e.parent];
-    }
-    return ans;
-  }
+  return _p_set[pId];
 }
 void Steiner::buildMST() {
   sort(_edges.begin(), _edges.end(),
       [] (Edge e1, Edge e2) {
         return e1.weight < e2.weight;
       });
-  for (unsigned i = 0; i < _points.size(); ++i)
-    _points[i].parent = i + _edges.size();
+  _p_set.resize(_points.size());
+  iota(_p_set.begin(), _p_set.end(), _edges.size());
+  _grps.resize(_edges.size());
   _lca_place.resize(_points.size());
-  unsigned cnt_p = 0;
   for (unsigned i = 0; i < _edges.size(); ++i) {
     Edge& e = _edges[i];
-    e.parent = i;
     unsigned head1 = findSet(e.p1);
     unsigned head2 = findSet(e.p2);
     if (head1 != head2) {
@@ -273,14 +265,34 @@ void Steiner::buildMST() {
           _lca_queries.emplace_back(w, e.p2, i);
         }
       }
-      if (head1 >= _edges.size()) { _points[e.p1].parent = i; ++cnt_p; }
-      else _edges[head1].parent = i;
-      if (head2 >= _edges.size()) { _points[e.p2].parent = i; ++cnt_p; }
-      else _edges[head2].parent = i;
+      if (head1 < _edges.size()) {
+        for (int p : _grps[head1]) {
+          _p_set[p] = i;
+          _grps[i].emplace_back(p);
+        }
+        _grps[head1].clear();
+      }
+      else {
+        int pId = head1 - _edges.size();
+        _p_set[pId] = i;
+        _grps[i].emplace_back(pId);
+      }
+      if (head2 < _edges.size()) {
+        for (int p : _grps[head2]) {
+          _p_set[p] = i;
+          _grps[i].emplace_back(p);
+        }
+        _grps[head2].clear();
+      }
+      else {
+        int pId = head2 - _edges.size();
+        _p_set[pId] = i;
+        _grps[i].emplace_back(pId);
+      }
       e.left = head1;
       e.right = head2;
       _MST.emplace_back(i);
-      if (cnt_p == _points.size()) break;
+      if (_grps[i].size() == _points.size()) break;
     }
   }
   _root = findSet(0);
@@ -312,36 +324,13 @@ void Steiner::tarjanLCA(int x) {
   _visit[x] = true;
   if (x >= (int)_edges.size()) {
     int u = x - _edges.size();
-    for (unsigned i = 0; i < _lca_place[u].size(); ++i) {	
+    for (unsigned i = 0; i < _lca_place[u].size(); ++i) {
       int which = _lca_place[u][i];
-      int v = get<0>(_lca_queries[which]) == u ? 
+      int v = get<0>(_lca_queries[which]) == u ?
               get<1>(_lca_queries[which]) : get<0>(_lca_queries[which]);
       v += _edges.size();
       if (_visit[v]) _lca_answer_queries[which] = _ancestor[tarfind(v)];
     }
-  }
-}
-void Steiner::bruteforceLCA() {
-  for (unsigned i = 0; i < _lca_queries.size(); ++i) {
-    int puId = _points[get<0>(_lca_queries[i])].parent;
-    int pvId = _points[get<1>(_lca_queries[i])].parent;
-    Edge pu = _edges[puId];
-    Edge pv = _edges[pvId];
-    vector<int> pus, pvs;
-    pus.emplace_back(puId);
-    pvs.emplace_back(pvId);
-    while (pu.parent != puId) {
-      pus.emplace_back(pu.parent);
-      puId = pu.parent;
-      pu = _edges[puId];
-    }
-    while (pv.parent != pvId) {
-      pvs.emplace_back(pv.parent);
-      pvId = pv.parent;
-      pv = _edges[pvId];
-    }
-    auto it = find_first_of(pus.begin(), pus.end(), pvs.begin(), pvs.end());
-    _lca_answer_queries[i] = *it;
   }
 }
 void Steiner::buildRST() {
@@ -351,8 +340,8 @@ void Steiner::buildRST() {
   _par.resize(_edges.size() + _points.size());
   _rank.resize(_edges.size() + _points.size());
   tarjanLCA(_root);
-  //bruteforceLCA();
   _table.reserve(_lca_queries.size());
+  _table_place.resize(_edges.size());
   for (unsigned i = 0; i < _lca_queries.size(); ++i) {
     int p = get<0>(_lca_queries[i]);
     int ae = get<2>(_lca_queries[i]);
@@ -375,6 +364,10 @@ void Steiner::buildRST() {
       [] (tuple<int, int, int, int> t1, tuple<int, int, int, int> t2) {
         return get<3>(t1) > get<3>(t2);
       });
+  for (unsigned i = 0; i < _table.size(); ++i) {
+    _table_place[get<1>(_table[i])].emplace_back(i);
+    _table_place[get<2>(_table[i])].emplace_back(i);
+  }
 #ifdef DEBUG
   for (unsigned i = 0; i < _table.size(); ++i) {
     cerr << get<0>(_table[i]) << " (" << _edges[get<1>(_table[i])].p1 << ","
@@ -407,20 +400,16 @@ void Steiner::buildRST() {
       Point new_p = Point(sx, sy);
       _points.emplace_back(new_p);
       int weight = abs(p.x - new_p.x) + abs(p.y - new_p.y);
-      int weight1 = abs(_points[add_e.p1].x - new_p.x) + 
+      int weight1 = abs(_points[add_e.p1].x - new_p.x) +
                     abs(_points[add_e.p1].y - new_p.y);
-      int weight2 = abs(_points[add_e.p2].x - new_p.x) + 
+      int weight2 = abs(_points[add_e.p2].x - new_p.x) +
                     abs(_points[add_e.p2].y - new_p.y);
       _newE.emplace_back(Edge(new_pId, pId, weight));
       _newE.emplace_back(Edge(new_pId, add_e.p1, weight1));
       _newE.emplace_back(Edge(new_pId, add_e.p2, weight2));
     }
-    for (unsigned j = i; j < _table.size(); ++j) {
-      if (get<1>(_table[j]) == get<2>(_table[i]) ||
-          get<2>(_table[j]) == get<2>(_table[i]) ||
-          get<2>(_table[j]) == get<1>(_table[i]) ||
-          get<1>(_table[j]) == get<1>(_table[i])) _table_del[j] = true;
-    }
+    for (int pos : _table_place[get<1>(_table[i])]) _table_del[pos] = true;
+    for (int pos : _table_place[get<2>(_table[i])]) _table_del[pos] = true;
   }
 
 }
@@ -429,11 +418,11 @@ void Steiner::plot(const string& plotName) {
   ofstream of(ofileName, ofstream::out);
   of << "set size ratio -1" << endl;
   of << "set nokey" << endl;
-  of << "set xrange[" 
-		 << (_boundaryRight - _boundaryLeft) * -0.05 << ":" 
+  of << "set xrange["
+     << (_boundaryRight - _boundaryLeft) * -0.05 << ":"
      << (_boundaryRight - _boundaryLeft) * 1.05 << "]" << endl;
-  of << "set yrange[" 
-		 << (_boundaryTop - _boundaryBottom) * -0.05 << ":" 
+  of << "set yrange["
+     << (_boundaryTop - _boundaryBottom) * -0.05 << ":"
      << (_boundaryTop - _boundaryBottom) * 1.05 << "]" << endl;
   int idx = 1;
   of << "set object " << idx++ << " rect from "
@@ -451,7 +440,7 @@ void Steiner::plot(const string& plotName) {
     Point& p2 = _points[_init_edges[i].p2];
     of << "set arrow " << idx++ << " from "
        << p1.x << "," << p1.y << " to "
-       << p2.x << "," << p2.y 
+       << p2.x << "," << p2.y
        << " nohead lc rgb \"white\" lw 1 front\n";
   }
   // MST
@@ -460,7 +449,7 @@ void Steiner::plot(const string& plotName) {
     Point& p2 = _points[_init_edges[_init_MST[i]].p2];
     of << "set arrow " << idx++ << " from "
        << p1.x << "," << p1.y << " to "
-       << p2.x << "," << p2.y 
+       << p2.x << "," << p2.y
        << " nohead lc rgb \"blue\" lw 1 front\n";
   }
   // s-point
@@ -513,13 +502,13 @@ void Steiner::outfile(const string& outfileName) {
       of << "H-line "
          << "(" << p1.x << "," << p1.y << ") "
          << "(" << p2.x << "," << p1.y << ")"
-         << endl; 
+         << endl;
     }
     if (p1.y != p2.y) {
       of << "V-line "
          << "(" << p2.x << "," << p1.y << ") "
          << "(" << p2.x << "," << p2.y << ")"
-         << endl; 
+         << endl;
     }
   }
   for (unsigned i = 0; i < _newE.size(); ++i) {
@@ -529,13 +518,13 @@ void Steiner::outfile(const string& outfileName) {
       of << "H-line "
          << "(" << p1.x << "," << p1.y << ") "
          << "(" << p2.x << "," << p1.y << ")"
-         << endl; 
+         << endl;
     }
     if (p1.y != p2.y) {
       of << "V-line "
          << "(" << p2.x << "," << p1.y << ") "
          << "(" << p2.x << "," << p2.y << ")"
-         << endl; 
+         << endl;
     }
   }
   of.close();

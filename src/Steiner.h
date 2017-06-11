@@ -5,7 +5,7 @@
 #include <string>
 #include <tuple>
 #include "datastructure.h"
-
+#define VERBOSE
 class Steiner {
   public:
     Steiner() :
@@ -31,7 +31,6 @@ class Steiner {
     int  tarfind(int x);
     void tarunion(int x, int y);
     void tarjanLCA(int x);
-    void bruteforceLCA();
   private: // members
     std::string _name;
     int _boundaryLeft, _boundaryRight;
@@ -40,6 +39,8 @@ class Steiner {
     int _root;
     std::vector<Point> _points;
     std::vector<Edge>  _edges;
+    std::vector<std::vector<int>> _grps;
+    std::vector<int>   _p_set;
     std::vector<int>   _MST;
     std::vector<bool>  _MST_del;
     std::vector<std::vector<int>>          _lca_place; // adj-list of index
@@ -52,6 +53,7 @@ class Steiner {
     std::vector<int>  _rank;
     //----------------------
     std::vector<std::tuple<int, int, int, int>> _table;
+    std::vector<std::vector<int>> _table_place;
     std::vector<bool> _table_del;
     std::vector<Edge> _newE;
 
