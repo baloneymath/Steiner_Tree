@@ -22,7 +22,7 @@ inline void split(string& str, const string& delim, vector<string>& v)
   }
   v.push_back(str);
 }
-Point Steiner::string2Point(string str) {
+inline Point string2Point(string str) {
   vector<string> tokens;
   split(str, ",", tokens);
   int x = stoi(tokens[0].substr(1));

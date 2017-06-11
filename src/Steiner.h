@@ -20,7 +20,6 @@ class Steiner {
     void outfile(const std::string& outfileName);
   private: // helper functions
     // parse ---------------------
-    Point string2Point(std::string str);
     void  addEdge(int p1, int p2);
     // solve ---------------------
     int  findSet(int pId);
