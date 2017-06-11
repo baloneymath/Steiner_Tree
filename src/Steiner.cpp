@@ -242,7 +242,7 @@ int Steiner::findSet(int pId) {
 }
 void Steiner::buildMST() {
   sort(_edges.begin(), _edges.end(),
-      [] (Edge& e1, Edge& e2) {
+      [] (Edge e1, Edge e2) {
         return e1.weight < e2.weight;
       });
   for (unsigned i = 0; i < _edges.size(); ++i)
