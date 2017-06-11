@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+#include "util.h"
 #include "Steiner.h"
 using namespace std;
 
@@ -33,12 +34,24 @@ bool handleArgument(const int& argc, char** argv) {
 int main(int argc, char** argv) {
 	ios::sync_with_stdio(false);
   cin.tie(0);
+	TimeUsage timer;
 	if (!handleArgument(argc, argv)) return -1;
 	string fileName = argv[1];
 	Steiner st;
 	st.parse(argv[1]);
 	st.solve();
-	if (gDoplot) st.plot(plotName);
-	if (gOutfile) st.outfile(outfileName);
+	timer.showUsage("solve", TimeUsage::PARTIAL);
+	timer.start(TimeUsage::PARTIAL);
+	if (gDoplot) {
+		st.plot(plotName);
+		timer.showUsage("plot", TimeUsage::PARTIAL);
+		timer.start(TimeUsage::PARTIAL);
+	}
+	if (gOutfile) {
+		st.outfile(outfileName);
+		timer.showUsage("outfile", TimeUsage::PARTIAL);
+		timer.start(TimeUsage::PARTIAL);
+	}
+	timer.showUsage("Steiner", TimeUsage::FULL);
 	return 0;
 }

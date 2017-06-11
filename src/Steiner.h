@@ -43,7 +43,7 @@ class Steiner {
     std::vector<Edge>  _edges;
     std::vector<int>   _MST;
     std::vector<bool>  _MST_del;
-    std::vector<std::vector<int>>          _lca_place; // adj-list of place in _lca_queries
+    std::vector<std::vector<int>>          _lca_place; // adj-list of index
     std::vector<std::tuple<int, int, int>> _lca_queries; // p, p, e
     std::vector<int>                       _lca_answer_queries; // longest e
     // tarjan -------------

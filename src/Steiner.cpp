@@ -128,7 +128,7 @@ void Steiner::solve() {
     if (_MST_del[eId]) continue;
     _MRST_cost += _edges[eId].weight;
   }
-  cerr << endl;
+  cerr << _name << endl;
   cerr << "RSG edge   : " << _edges.size() << endl;
   cerr << "MST length : " << _MST_cost << endl;
   cerr << "MRST length: " << _MRST_cost << endl;
@@ -139,7 +139,7 @@ void Steiner::solve() {
 void Steiner::addEdge(int p1, int p2) {
   if (p1 == p2) return;
   int weight = abs(_points[p1].x - _points[p2].x) +
-           abs(_points[p1].y - _points[p2].y);
+           		 abs(_points[p1].y - _points[p2].y);
   _edges.emplace_back(Edge(p1, p2, weight));
   _points[p1].neighbors.emplace_back(p2);
   _points[p2].neighbors.emplace_back(p1);
@@ -428,10 +428,12 @@ void Steiner::plot(const string& plotName) {
   ofstream of(ofileName, ofstream::out);
   of << "set size ratio -1" << endl;
   of << "set nokey" << endl;
-  of << "set xrange[" << -_boundaryRight * 0.1 << ":" 
-     << _boundaryRight * 1.1 << "]" << endl;
-  of << "set yrange[" << -_boundaryTop * 0.1 << ":" 
-     << _boundaryTop * 1.1 << "]" << endl;
+  of << "set xrange[" 
+		 << (_boundaryRight - _boundaryLeft) * -0.05 << ":" 
+     << (_boundaryRight - _boundaryLeft) * 1.05 << "]" << endl;
+  of << "set yrange[" 
+		 << (_boundaryTop - _boundaryBottom) * -0.05 << ":" 
+     << (_boundaryTop - _boundaryBottom) * 1.05 << "]" << endl;
   int idx = 1;
   of << "set object " << idx++ << " rect from "
      << _boundaryLeft << "," << _boundaryBottom << " to "
