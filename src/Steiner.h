@@ -53,8 +53,7 @@ class Steiner {
     std::vector<int>  _rank;
     //----------------------
     std::vector<std::tuple<int, int, int, int>> _table;
-    std::vector<std::vector<int>> _table_place;
-    std::vector<bool> _table_del;
+    std::vector<bool> _edges_del;
     std::vector<Edge> _newE;
 
     long long _MST_cost;

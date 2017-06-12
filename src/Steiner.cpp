@@ -76,8 +76,7 @@ void Steiner::init() {
   _rank.clear();
   _newE.clear();
   _table.clear();
-  _table_del.clear();
-  _table_place.clear();
+	_edges_del.clear();
 }
 extern bool gDoplot;
 void Steiner::solve() {
@@ -323,7 +322,7 @@ void Steiner::buildRST() {
   _rank.resize(_edges.size() + _points.size());
   tarjanLCA(_root);
   _table.reserve(_lca_queries.size());
-  _table_place.resize(_edges.size());
+  //_table_place.resize(_edges.size());
   for (unsigned i = 0; i < _lca_queries.size(); ++i) {
     int p = get<0>(_lca_queries[i]);
     int ae = get<2>(_lca_queries[i]);
@@ -346,10 +345,6 @@ void Steiner::buildRST() {
       [] (tuple<int, int, int, int> t1, tuple<int, int, int, int> t2) {
         return get<3>(t1) > get<3>(t2);
       });
-  for (unsigned i = 0; i < _table.size(); ++i) {
-    _table_place[get<1>(_table[i])].emplace_back(i);
-    _table_place[get<2>(_table[i])].emplace_back(i);
-  }
 #ifdef DEBUG
   for (unsigned i = 0; i < _table.size(); ++i) {
     cerr << get<0>(_table[i]) << " (" << _edges[get<1>(_table[i])].p1 << ","
@@ -360,13 +355,15 @@ void Steiner::buildRST() {
   }
 #endif
   _MST_del.resize(_edges.size());
-  _table_del.resize(_table.size());
-  for (unsigned i = 0; i < _table.size(); ++i) {
-    if (_table_del[i]) continue;
-    _MST_del[get<1>(_table[i])] = true;
-    _MST_del[get<2>(_table[i])] = true;
+  _edges_del.resize(_edges.size());
+	for (unsigned i = 0; i < _table.size(); ++i) {
+		int ae = get<1>(_table[i]);
+		int de = get<2>(_table[i]);
+    if (_edges_del[ae] || _edges_del[de]) continue;
+		_MST_del[ae] = true;
+    _MST_del[de] = true;
     Point p = _points[get<0>(_table[i])];
-    Edge& add_e = _edges[get<1>(_table[i])];
+    Edge& add_e = _edges[ae];
     int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
     int mnx = min(_points[add_e.p1].x, _points[add_e.p2].x);
     int mxy = max(_points[add_e.p1].y, _points[add_e.p2].y);
@@ -390,8 +387,8 @@ void Steiner::buildRST() {
       _newE.emplace_back(Edge(new_pId, add_e.p1, weight1));
       _newE.emplace_back(Edge(new_pId, add_e.p2, weight2));
     }
-    for (int pos : _table_place[get<1>(_table[i])]) _table_del[pos] = true;
-    for (int pos : _table_place[get<2>(_table[i])]) _table_del[pos] = true;
+		_edges_del[ae] = true;
+		_edges_del[de] = true;
   }
 
 }
