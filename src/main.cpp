@@ -40,17 +40,23 @@ int main(int argc, char** argv) {
   Steiner st;
   st.parse(argv[1]);
   st.solve();
+#ifdef VERBOSE
   timer.showUsage("solve", TimeUsage::PARTIAL);
   timer.start(TimeUsage::PARTIAL);
+#endif
   if (gDoplot) {
     st.plot(plotName);
+#ifdef VERBOSE    
     timer.showUsage("plot", TimeUsage::PARTIAL);
     timer.start(TimeUsage::PARTIAL);
+#endif
   }
   if (gOutfile) {
     st.outfile(outfileName);
+#ifdef VERBOSE
     timer.showUsage("outfile", TimeUsage::PARTIAL);
     timer.start(TimeUsage::PARTIAL);
+#endif
   }
   timer.showUsage("Steiner", TimeUsage::FULL);
   return 0;

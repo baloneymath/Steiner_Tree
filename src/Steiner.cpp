@@ -66,7 +66,7 @@ void Steiner::init() {
   _edges.clear();
   _set.clear();
   _MST.clear();
-  _MST_del.clear();
+  _edges_del.clear();
   _lca_place.clear();
   _lca_queries.clear();
   _lca_answer_queries.clear();
@@ -76,7 +76,7 @@ void Steiner::init() {
   _rank.clear();
   _newE.clear();
   _table.clear();
-	_edges_del.clear();
+  _table_cnt.clear();
 }
 extern bool gDoplot;
 void Steiner::solve() {
@@ -127,7 +127,7 @@ void Steiner::solve() {
   }
   for (auto& e : _newE) _MRST_cost += e.weight;
   for (int eId : _MST) {
-    if (_MST_del[eId]) continue;
+    if (_edges_del[eId]) continue;
     _MRST_cost += _edges[eId].weight;
   }
   cerr << _name << endl;
@@ -160,6 +160,8 @@ void Steiner::buildRSG() {
         return _points[i1].x - _points[i1].y < _points[i2].x - _points[i2].y;
       });
   vector<int> A1, A2;
+  A1.reserve(_points.size());
+  A2.reserve(_points.size());
   for (int pId : order1) {
     Point& p = _points[pId];
     if (!A1.empty()) {
@@ -322,7 +324,7 @@ void Steiner::buildRST() {
   _rank.resize(_edges.size() + _points.size());
   tarjanLCA(_root);
   _table.reserve(_lca_queries.size());
-  //_table_place.resize(_edges.size());
+  _table_cnt.resize(_edges.size());
   for (unsigned i = 0; i < _lca_queries.size(); ++i) {
     int p = get<0>(_lca_queries[i]);
     int ae = get<2>(_lca_queries[i]);
@@ -339,12 +341,21 @@ void Steiner::buildRST() {
     else if (pnt.x > mxx) gain -= pnt.x - mxx;
     if (pnt.y < mny)      gain -= mny - pnt.y;
     else if (pnt.y > mxy) gain -= pnt.y - mxy;
-    if (gain > 0) _table.emplace_back(p, ae, de, gain);
+    if (gain > 0) {
+      ++_table_cnt[ae];
+      ++_table_cnt[de];
+      _table.emplace_back(p, ae, de, gain);
+    }
   }
-  sort(_table.begin(), _table.end(),
-      [] (tuple<int, int, int, int> t1, tuple<int, int, int, int> t2) {
-        return get<3>(t1) > get<3>(t2);
-      });
+  auto sortByGain = [&] (tuple<int, int, int, int> t1,
+                         tuple<int, int, int, int> t2) {
+    if (get<3>(t1) == get<3>(t2)) {
+      return _table_cnt[get<1>(t1)] + _table_cnt[get<2>(t1)] <
+             _table_cnt[get<1>(t2)] + _table_cnt[get<2>(t2)];
+    }
+    return get<3>(t1) > get<3>(t2);
+  };
+  sort(_table.begin(), _table.end(), sortByGain);
 #ifdef DEBUG
   for (unsigned i = 0; i < _table.size(); ++i) {
     cerr << get<0>(_table[i]) << " (" << _edges[get<1>(_table[i])].p1 << ","
@@ -354,14 +365,11 @@ void Steiner::buildRST() {
          << get<3>(_table[i]) << endl;
   }
 #endif
-  _MST_del.resize(_edges.size());
   _edges_del.resize(_edges.size());
 	for (unsigned i = 0; i < _table.size(); ++i) {
 		int ae = get<1>(_table[i]);
 		int de = get<2>(_table[i]);
     if (_edges_del[ae] || _edges_del[de]) continue;
-		_MST_del[ae] = true;
-    _MST_del[de] = true;
     Point p = _points[get<0>(_table[i])];
     Edge& add_e = _edges[ae];
     int mxx = max(_points[add_e.p1].x, _points[add_e.p2].x);
@@ -439,7 +447,7 @@ void Steiner::plot(const string& plotName) {
   }
   // RST
   for (unsigned i = 0; i < _MST.size(); ++i) {
-    if (_MST_del[_MST[i]]) continue;
+    if (_edges_del[_MST[i]]) continue;
     Point& p1 = _points[_edges[_MST[i]].p1];
     Point& p2 = _points[_edges[_MST[i]].p2];
     if (p1.x != p2.x) {
@@ -474,7 +482,7 @@ void Steiner::outfile(const string& outfileName) {
   of << "NumRoutedPins = " << _init_p << endl;
   of << "WireLength = " << _MRST_cost << endl;
   for (unsigned i = 0; i < _MST.size(); ++i) {
-    if (_MST_del[_MST[i]]) continue;
+    if (_edges_del[_MST[i]]) continue;
     Point& p1 = _points[_edges[_MST[i]].p1];
     Point& p2 = _points[_edges[_MST[i]].p2];
     if (p1.x != p2.x) {

@@ -5,7 +5,7 @@
 #include <string>
 #include <tuple>
 #include "datastructure.h"
-#define VERBOSE
+
 class Steiner {
   public:
     Steiner() :
@@ -42,7 +42,7 @@ class Steiner {
     std::vector<Edge>  _edges;
     std::vector<int>   _set;
     std::vector<int>   _MST;
-    std::vector<bool>  _MST_del;
+    std::vector<bool>  _edges_del;
     std::vector<std::vector<int>>          _lca_place; // adj-list of index
     std::vector<std::tuple<int, int, int>> _lca_queries; // p, p, e
     std::vector<int>                       _lca_answer_queries; // longest e
@@ -53,7 +53,7 @@ class Steiner {
     std::vector<int>  _rank;
     //----------------------
     std::vector<std::tuple<int, int, int, int>> _table;
-    std::vector<bool> _edges_del;
+    std::vector<int>  _table_cnt;
     std::vector<Edge> _newE;
 
     long long _MST_cost;
