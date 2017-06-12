@@ -160,18 +160,18 @@ void Steiner::buildRSG() {
       [&] (int i1, int i2) {
         return _points[i1].x - _points[i1].y < _points[i2].x - _points[i2].y;
       });
-  multimap<int, int> A1, A2;
+  vector<int> A1, A2;
   for (int pId : order1) {
     Point& p = _points[pId];
     if (!A1.empty()) {
       auto it = A1.end();
       do {
         --it;
-        Point& tmp = _points[it->second];
+        Point& tmp = _points[*it];
         if (p.y - tmp.y >= p.x - tmp.x &&
             p.y - tmp.y > 0 &&
             p.x - tmp.x > 0) {
-          addEdge(pId, it->second);
+          addEdge(pId, *it);
           it = A1.erase(it);
           //break;
         }
@@ -181,18 +181,18 @@ void Steiner::buildRSG() {
       auto it = A2.end();
       do {
         --it;
-        Point& tmp = _points[it->second];
+        Point& tmp = _points[*it];
         if (p.y - tmp.y < p.x - tmp.x &&
             p.y - tmp.y >= 0 &&
             p.x - tmp.x > 0) {
-          addEdge(pId, it->second);
+          addEdge(pId, *it);
           it = A2.erase(it);
           //break;
         }
       } while (it != A2.begin());
     }
-    A1.emplace(p.x + p.y, pId);
-    A2.emplace(p.x + p.y, pId);
+    A1.emplace_back(pId);
+    A2.emplace_back(pId);
   }
   A1.clear();
   A2.clear();
@@ -202,11 +202,11 @@ void Steiner::buildRSG() {
       auto it = A1.end();
       do {
         --it;
-        Point& tmp = _points[it->second];
+        Point& tmp = _points[*it];
         if (tmp.y - p.y <= p.x - tmp.x &&
             p.y - tmp.y < 0 &&
             p.x - tmp.x > 0) {
-          addEdge(pId, it->second);
+          addEdge(pId, *it);
           it = A1.erase(it);
           //break;
         }
@@ -216,18 +216,18 @@ void Steiner::buildRSG() {
       auto it = A2.end();
       do {
         --it;
-        Point& tmp = _points[it->second];
+        Point& tmp = _points[*it];
         if (tmp.y - p.y > p.x - tmp.x &&
             p.y - tmp.y < 0 &&
             p.x - tmp.x >= 0) {
-          addEdge(pId, it->second);
+          addEdge(pId, *it);
           it = A2.erase(it);
           //break;
         }
       } while (it != A2.begin());
     }
-    A1.emplace(p.x - p.y, pId);
-    A2.emplace(p.x - p.y, pId);
+    A1.emplace_back(pId);
+    A2.emplace_back(pId);
   }
 
 }
