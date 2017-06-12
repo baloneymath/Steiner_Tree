@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <numeric>
+#include <cassert>
 
 #include "util.h"
 #include "Steiner.h"
@@ -63,8 +64,7 @@ void Steiner::parse(const string& fileName) {
 }
 void Steiner::init() {
   _edges.clear();
-  _grps.clear();
-  _p_set.clear();
+  _set.clear();
   _MST.clear();
   _MST_del.clear();
   _lca_place.clear();
@@ -231,22 +231,28 @@ void Steiner::buildRSG() {
   }
 
 }
-unsigned Steiner::findSet(int pId) {
-  return _p_set[pId];
+unsigned Steiner::findSet(int x) {
+  return x == _set[x] ? _set[x] : (_set[x] = findSet(_set[x]));
+}
+void Steiner::unionSet(int x, int y, int z) {
+	int xroot = findSet(x);
+	int yroot = findSet(y);
+	assert (xroot != yroot);
+	_set[xroot] = z;
+	_set[yroot] = z;
 }
 void Steiner::buildMST() {
   sort(_edges.begin(), _edges.end(),
       [] (Edge e1, Edge e2) {
         return e1.weight < e2.weight;
       });
-  _p_set.resize(_points.size());
-  iota(_p_set.begin(), _p_set.end(), _edges.size());
-  _grps.resize(_edges.size());
+  _set.resize(_edges.size() + _points.size());
+  iota(_set.begin(), _set.end(), 0);
   _lca_place.resize(_points.size());
   for (unsigned i = 0; i < _edges.size(); ++i) {
     Edge& e = _edges[i];
-    unsigned head1 = findSet(e.p1);
-    unsigned head2 = findSet(e.p2);
+    unsigned head1 = findSet(e.p1 + _edges.size());
+    unsigned head2 = findSet(e.p2 + _edges.size());
     if (head1 != head2) {
       set<int> neighbors;
       for (int n : _points[e.p1].neighbors) neighbors.emplace(n);
@@ -254,7 +260,7 @@ void Steiner::buildMST() {
       neighbors.erase(e.p1);
       neighbors.erase(e.p2);
       for (int w : neighbors) {
-        if (head1 == findSet(w)) {
+        if (head1 == findSet(w + _edges.size())) {
           _lca_place[w].emplace_back(_lca_queries.size());
           _lca_place[e.p1].emplace_back(_lca_queries.size());
           _lca_queries.emplace_back(w, e.p1, i);
@@ -265,34 +271,10 @@ void Steiner::buildMST() {
           _lca_queries.emplace_back(w, e.p2, i);
         }
       }
-      if (head1 < _edges.size()) {
-        for (int p : _grps[head1]) {
-          _p_set[p] = i;
-          _grps[i].emplace_back(p);
-        }
-        _grps[head1].clear();
-      }
-      else {
-        int pId = head1 - _edges.size();
-        _p_set[pId] = i;
-        _grps[i].emplace_back(pId);
-      }
-      if (head2 < _edges.size()) {
-        for (int p : _grps[head2]) {
-          _p_set[p] = i;
-          _grps[i].emplace_back(p);
-        }
-        _grps[head2].clear();
-      }
-      else {
-        int pId = head2 - _edges.size();
-        _p_set[pId] = i;
-        _grps[i].emplace_back(pId);
-      }
+			unionSet(head1, head2, i);
       e.left = head1;
       e.right = head2;
       _MST.emplace_back(i);
-      if (_grps[i].size() == _points.size()) break;
     }
   }
   _root = findSet(0);

@@ -23,6 +23,7 @@ class Steiner {
     void  addEdge(int p1, int p2);
     // solve ---------------------
     unsigned findSet(int pId);
+		void unionSet(int x, int y, int z);
     void init();
     void buildRSG();
     void buildMST();
@@ -39,8 +40,7 @@ class Steiner {
     int _root;
     std::vector<Point> _points;
     std::vector<Edge>  _edges;
-    std::vector<std::vector<int>> _grps;
-    std::vector<int>   _p_set;
+    std::vector<int>   _set;
     std::vector<int>   _MST;
     std::vector<bool>  _MST_del;
     std::vector<std::vector<int>>          _lca_place; // adj-list of index
